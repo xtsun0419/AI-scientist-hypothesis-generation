@@ -1,0 +1,23 @@
+id,run_id,source,query,failure_type,message,attempt,created_at
+1,4,semantic_scholar,permanent magnet,rate_limited,semantic_scholar HTTP 429: ,1,2026-06-04T08:03:24+00:00
+2,4,semantic_scholar,permanent magnet,rate_limited,semantic_scholar HTTP 429: ,2,2026-06-04T08:03:28+00:00
+3,4,semantic_scholar,permanent magnet,rate_limited,semantic_scholar HTTP 429: ,3,2026-06-04T08:03:35+00:00
+4,4,arxiv,permanent magnet,timeout,The read operation timed out,1,2026-06-04T08:04:09+00:00
+5,4,arxiv,permanent magnet,timeout,The read operation timed out,2,2026-06-04T08:04:41+00:00
+6,4,arxiv,permanent magnet,rate_limited,arxiv HTTP 429: Unknown Error,3,2026-06-04T08:04:56+00:00
+7,4,semantic_scholar,permanent magnet coercivity,rate_limited,semantic_scholar HTTP 429: ,1,2026-06-04T08:05:13+00:00
+8,4,semantic_scholar,permanent magnet coercivity,rate_limited,semantic_scholar HTTP 429: ,2,2026-06-04T08:05:17+00:00
+9,4,semantic_scholar,permanent magnet coercivity,rate_limited,semantic_scholar HTTP 429: ,3,2026-06-04T08:05:24+00:00
+10,4,arxiv,permanent magnet coercivity,rate_limited,arxiv HTTP 429: Too Many Requests,1,2026-06-04T08:05:44+00:00
+11,4,arxiv,permanent magnet coercivity,rate_limited,arxiv HTTP 429: Unknown Error,2,2026-06-04T08:05:49+00:00
+12,4,arxiv,permanent magnet coercivity,rate_limited,arxiv HTTP 429: Too Many Requests,3,2026-06-04T08:06:13+00:00
+13,4,semantic_scholar,permanent magnet remanence,rate_limited,semantic_scholar HTTP 429: ,1,2026-06-04T08:06:30+00:00
+14,4,arxiv,permanent magnet remanence,timeout,The read operation timed out,1,2026-06-04T08:07:11+00:00
+15,4,arxiv,permanent magnet remanence,rate_limited,arxiv HTTP 429: Unknown Error,2,2026-06-04T08:07:28+00:00
+16,4,arxiv,permanent magnet remanence,rate_limited,arxiv HTTP 429: Unknown Error,3,2026-06-04T08:07:36+00:00
+17,4,core,permanent magnet remanence,rate_limited,core HTTP 429: Too Many Requests,1,2026-06-04T08:07:41+00:00
+18,4,core,permanent magnet remanence,rate_limited,core HTTP 429: Too Many Requests,2,2026-06-04T08:07:45+00:00
+19,4,semantic_scholar,permanent magnet maximum energy product,rate_limited,semantic_scholar HTTP 429: ,1,2026-06-04T08:08:04+00:00
+20,4,semantic_scholar,permanent magnet maximum energy product,rate_limited,semantic_scholar HTTP 429: ,2,2026-06-04T08:08:09+00:00
+21,4,semantic_scholar,permanent magnet maximum energy product,rate_limited,semantic_scholar HTTP 429: ,3,2026-06-04T08:08:16+00:00
+22,4,core,permanent magnet maximum energy product,rate_limited,core HTTP 429: Too Many Requests,1,2026-06-04T08:08:40+00:00

@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+ACCESS_DOWNLOADED_OA_PDF = "downloaded_oa_pdf"
+ACCESS_PREPRINT_PDF = "preprint_pdf"
+ACCESS_OA_PDF_AVAILABLE = "oa_pdf_available"
+ACCESS_OA_NO_PDF_URL = "oa_no_pdf_url"
+ACCESS_CLOSED_HAS_DOI = "closed_access_has_doi"
+ACCESS_CLOSED_MISSING_DOI = "closed_access_missing_doi"
+ACCESS_DOWNLOAD_FAILED = "download_failed"
+ACCESS_NEEDS_MANUAL_REVIEW = "needs_manual_review"
+
+ALL_ACCESS_STATUSES = {
+    ACCESS_DOWNLOADED_OA_PDF,
+    ACCESS_PREPRINT_PDF,
+    ACCESS_OA_PDF_AVAILABLE,
+    ACCESS_OA_NO_PDF_URL,
+    ACCESS_CLOSED_HAS_DOI,
+    ACCESS_CLOSED_MISSING_DOI,
+    ACCESS_DOWNLOAD_FAILED,
+    ACCESS_NEEDS_MANUAL_REVIEW,
+}

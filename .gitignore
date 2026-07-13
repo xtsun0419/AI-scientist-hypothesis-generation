@@ -1,0 +1,47 @@
+# macOS / editor noise
+.DS_Store
+*.swp
+*.swo
+
+# Local environment and credentials
+.env
+.env.*
+*.env
+!*.env.example
+**/configs/local.env
+**/configs/external_llm_apis.json
+**/*secret*
+**/*token*
+**/*apikey*
+**/*api_key*
+*.pem
+*.key
+*.p12
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Local runtime data
+*.sqlite
+*.sqlite3
+*.db
+**/data/pdfs/
+**/data/goal_pdfs/
+**/data/manual_pdfs/
+
+# Generated render / report artifacts
+REPORT/render_qa_chapter/
+REPORT/render_tools/
+REPORT/*.pdf
+REPORT/*.docx
+
+# Local Codex/agent workspace metadata
+.codex/
+.agents/

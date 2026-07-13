@@ -1,0 +1,691 @@
+{
+  "version": 1,
+  "runs": [
+    {
+      "id": "2026-06-16T055451Z0000",
+      "created_at": "2026-06-16T05:54:51+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 2,
+      "emphasis": "偏向可验证路线",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "deepseek-v4-pro",
+      "metadata": {
+        "mode": "fallback_llm_error",
+        "error": "LLM request failed: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)>"
+      },
+      "routes": [
+        {
+          "title": "机制优先路线：锁定性能退化的关键变量",
+          "rationale": "围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。",
+          "rank": 1
+        },
+        {
+          "title": "候选体系路线：成分/结构空间筛选",
+          "rationale": "把 02/03 中出现的材料、方法和开放问题转为有限候选集合，用统一指标做第一轮排序。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "主相稳定性",
+            "磁晶各向异性",
+            "饱和磁化强度",
+            "交换刚度",
+            "热稳定性"
+          ],
+          "validation": [
+            "高通量 DFT 或数据库筛选",
+            "微磁模拟估计上限",
+            "与文献 Paper Cards 中的基准值对比"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "筛选命中不等于可合成",
+            "0 K 计算和室温性能之间可能存在偏差"
+          ],
+          "priority": "中",
+          "next_step": "确定候选体系白名单和必须满足的硬约束，再生成计算/实验矩阵。",
+          "rank": 2
+        }
+      ]
+    },
+    {
+      "id": "2026-06-16T055446Z0000",
+      "created_at": "2026-06-16T05:54:46+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 4,
+      "emphasis": "偏向可验证路线",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "deepseek-v4-pro",
+      "metadata": {
+        "mode": "fallback_llm_error",
+        "error": "LLM request failed: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)>"
+      },
+      "routes": [
+        {
+          "title": "机制优先路线：锁定性能退化的关键变量",
+          "rationale": "围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。",
+          "rank": 1
+        },
+        {
+          "title": "候选体系路线：成分/结构空间筛选",
+          "rationale": "把 02/03 中出现的材料、方法和开放问题转为有限候选集合，用统一指标做第一轮排序。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "主相稳定性",
+            "磁晶各向异性",
+            "饱和磁化强度",
+            "交换刚度",
+            "热稳定性"
+          ],
+          "validation": [
+            "高通量 DFT 或数据库筛选",
+            "微磁模拟估计上限",
+            "与文献 Paper Cards 中的基准值对比"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "筛选命中不等于可合成",
+            "0 K 计算和室温性能之间可能存在偏差"
+          ],
+          "priority": "中",
+          "next_step": "确定候选体系白名单和必须满足的硬约束，再生成计算/实验矩阵。",
+          "rank": 2
+        },
+        {
+          "title": "工艺-微结构路线：从可制备性反推路线",
+          "rationale": "优先选择能被实验工艺控制的变量，让路线可以进入后续计算/实验规划。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi"
+          ],
+          "variables": [
+            "退火温度/时间",
+            "扩散源或添加元素",
+            "晶界连续性",
+            "织构与致密度"
+          ],
+          "validation": [
+            "小矩阵工艺实验",
+            "EBSD/TEM 等微结构表征",
+            "用 coercivity, energy product, magnetization, anisotropy 做性能闭环"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "工艺变量耦合较强，单因素解释可能不稳",
+            "样品制备成本高于纯计算路线"
+          ],
+          "priority": "中",
+          "next_step": "选择 2-3 个最容易控制的工艺变量，设计最小正交矩阵。",
+          "rank": 3
+        },
+        {
+          "title": "数据驱动路线：构建小样本可解释排序器",
+          "rationale": "当文献证据分散时，先把候选材料、变量和性能指标结构化，生成可迭代的路线评分表。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "材料标签",
+            "结构描述符",
+            "工艺标签",
+            "性能指标",
+            "证据等级"
+          ],
+          "validation": [
+            "用已知文献记录做留一验证",
+            "人工复核高分路线",
+            "把不确定项转为下一轮检索 query"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "样本量不足会导致评分不稳定",
+            "缺失数据需要显式标注，不能用模型补假数据"
+          ],
+          "priority": "低",
+          "next_step": "定义路线评分字段，并把当前候选路线导出为可人工修订的表格。",
+          "rank": 4
+        }
+      ]
+    },
+    {
+      "id": "2026-06-16T055009Z0000",
+      "created_at": "2026-06-16T05:50:09+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 4,
+      "emphasis": "偏向可验证路线",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "deepseek-v4-pro",
+      "metadata": {
+        "mode": "fallback_llm_error",
+        "error": "LLM request failed: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)>"
+      },
+      "routes": [
+        {
+          "title": "机制优先路线：锁定性能退化的关键变量",
+          "rationale": "围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。",
+          "rank": 1
+        },
+        {
+          "title": "候选体系路线：成分/结构空间筛选",
+          "rationale": "把 02/03 中出现的材料、方法和开放问题转为有限候选集合，用统一指标做第一轮排序。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "主相稳定性",
+            "磁晶各向异性",
+            "饱和磁化强度",
+            "交换刚度",
+            "热稳定性"
+          ],
+          "validation": [
+            "高通量 DFT 或数据库筛选",
+            "微磁模拟估计上限",
+            "与文献 Paper Cards 中的基准值对比"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "筛选命中不等于可合成",
+            "0 K 计算和室温性能之间可能存在偏差"
+          ],
+          "priority": "中",
+          "next_step": "确定候选体系白名单和必须满足的硬约束，再生成计算/实验矩阵。",
+          "rank": 2
+        },
+        {
+          "title": "工艺-微结构路线：从可制备性反推路线",
+          "rationale": "优先选择能被实验工艺控制的变量，让路线可以进入后续计算/实验规划。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi"
+          ],
+          "variables": [
+            "退火温度/时间",
+            "扩散源或添加元素",
+            "晶界连续性",
+            "织构与致密度"
+          ],
+          "validation": [
+            "小矩阵工艺实验",
+            "EBSD/TEM 等微结构表征",
+            "用 coercivity, energy product, magnetization, anisotropy 做性能闭环"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "工艺变量耦合较强，单因素解释可能不稳",
+            "样品制备成本高于纯计算路线"
+          ],
+          "priority": "中",
+          "next_step": "选择 2-3 个最容易控制的工艺变量，设计最小正交矩阵。",
+          "rank": 3
+        },
+        {
+          "title": "数据驱动路线：构建小样本可解释排序器",
+          "rationale": "当文献证据分散时，先把候选材料、变量和性能指标结构化，生成可迭代的路线评分表。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "材料标签",
+            "结构描述符",
+            "工艺标签",
+            "性能指标",
+            "证据等级"
+          ],
+          "validation": [
+            "用已知文献记录做留一验证",
+            "人工复核高分路线",
+            "把不确定项转为下一轮检索 query"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "样本量不足会导致评分不稳定",
+            "缺失数据需要显式标注，不能用模型补假数据"
+          ],
+          "priority": "低",
+          "next_step": "定义路线评分字段，并把当前候选路线导出为可人工修订的表格。",
+          "rank": 4
+        }
+      ]
+    },
+    {
+      "id": "2026-06-16T054833Z0000",
+      "created_at": "2026-06-16T05:48:33+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 4,
+      "emphasis": "偏向可验证路线",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "deepseek-v4-pro",
+      "metadata": {
+        "mode": "fallback_llm_error",
+        "error": "LLM request failed: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)>"
+      },
+      "routes": [
+        {
+          "title": "机制优先路线：锁定性能退化的关键变量",
+          "rationale": "围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。",
+          "rank": 1
+        },
+        {
+          "title": "候选体系路线：成分/结构空间筛选",
+          "rationale": "把 02/03 中出现的材料、方法和开放问题转为有限候选集合，用统一指标做第一轮排序。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "主相稳定性",
+            "磁晶各向异性",
+            "饱和磁化强度",
+            "交换刚度",
+            "热稳定性"
+          ],
+          "validation": [
+            "高通量 DFT 或数据库筛选",
+            "微磁模拟估计上限",
+            "与文献 Paper Cards 中的基准值对比"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "筛选命中不等于可合成",
+            "0 K 计算和室温性能之间可能存在偏差"
+          ],
+          "priority": "中",
+          "next_step": "确定候选体系白名单和必须满足的硬约束，再生成计算/实验矩阵。",
+          "rank": 2
+        },
+        {
+          "title": "工艺-微结构路线：从可制备性反推路线",
+          "rationale": "优先选择能被实验工艺控制的变量，让路线可以进入后续计算/实验规划。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi"
+          ],
+          "variables": [
+            "退火温度/时间",
+            "扩散源或添加元素",
+            "晶界连续性",
+            "织构与致密度"
+          ],
+          "validation": [
+            "小矩阵工艺实验",
+            "EBSD/TEM 等微结构表征",
+            "用 coercivity, energy product, magnetization, anisotropy 做性能闭环"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "工艺变量耦合较强，单因素解释可能不稳",
+            "样品制备成本高于纯计算路线"
+          ],
+          "priority": "中",
+          "next_step": "选择 2-3 个最容易控制的工艺变量，设计最小正交矩阵。",
+          "rank": 3
+        },
+        {
+          "title": "数据驱动路线：构建小样本可解释排序器",
+          "rationale": "当文献证据分散时，先把候选材料、变量和性能指标结构化，生成可迭代的路线评分表。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "材料标签",
+            "结构描述符",
+            "工艺标签",
+            "性能指标",
+            "证据等级"
+          ],
+          "validation": [
+            "用已知文献记录做留一验证",
+            "人工复核高分路线",
+            "把不确定项转为下一轮检索 query"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "样本量不足会导致评分不稳定",
+            "缺失数据需要显式标注，不能用模型补假数据"
+          ],
+          "priority": "低",
+          "next_step": "定义路线评分字段，并把当前候选路线导出为可人工修订的表格。",
+          "rank": 4
+        }
+      ]
+    },
+    {
+      "id": "2026-06-16T054656Z0000",
+      "created_at": "2026-06-16T05:46:56+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 1,
+      "emphasis": "偏向可验证路线",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "deepseek-v4-pro",
+      "metadata": {
+        "mode": "fallback_llm_error",
+        "error": "LLM request failed: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)>"
+      },
+      "routes": [
+        {
+          "title": "机制优先路线：锁定性能退化的关键变量",
+          "rationale": "围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。",
+          "rank": 1
+        }
+      ]
+    },
+    {
+      "id": "2026-06-16T050219Z0000",
+      "created_at": "2026-06-16T05:02:19+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 2,
+      "emphasis": "偏向可验证路线",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "LLM 未配置 - 本地规则草稿",
+      "metadata": {
+        "mode": "fallback_no_api_key"
+      },
+      "routes": [
+        {
+          "title": "机制优先路线：锁定性能退化的关键变量",
+          "rationale": "围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。",
+          "rank": 1
+        },
+        {
+          "title": "候选体系路线：成分/结构空间筛选",
+          "rationale": "把 02/03 中出现的材料、方法和开放问题转为有限候选集合，用统一指标做第一轮排序。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "主相稳定性",
+            "磁晶各向异性",
+            "饱和磁化强度",
+            "交换刚度",
+            "热稳定性"
+          ],
+          "validation": [
+            "高通量 DFT 或数据库筛选",
+            "微磁模拟估计上限",
+            "与文献 Paper Cards 中的基准值对比"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "筛选命中不等于可合成",
+            "0 K 计算和室温性能之间可能存在偏差"
+          ],
+          "priority": "中",
+          "next_step": "确定候选体系白名单和必须满足的硬约束，再生成计算/实验矩阵。",
+          "rank": 2
+        }
+      ]
+    }
+  ]
+}

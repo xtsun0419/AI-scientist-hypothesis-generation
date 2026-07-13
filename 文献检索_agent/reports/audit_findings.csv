@@ -1,0 +1,16 @@
+id,paper_id,severity,issue_type,message,suggestion,created_at
+18,16,medium,low_relevance,Paper has low permanent-magnet relevance score.,Review title and abstract before using this record.,2026-06-04T09:08:57+00:00
+19,24,medium,missing_doi,Paper has no DOI.,Export missing DOI report and resolve manually or through another source.,2026-06-04T09:08:57+00:00
+20,27,medium,low_relevance,Paper has low permanent-magnet relevance score.,Review title and abstract before using this record.,2026-06-04T09:08:57+00:00
+21,31,medium,missing_doi,Paper has no DOI.,Export missing DOI report and resolve manually or through another source.,2026-06-04T09:08:57+00:00
+22,33,medium,low_relevance,Paper has low permanent-magnet relevance score.,Review title and abstract before using this record.,2026-06-04T09:08:57+00:00
+23,35,medium,low_relevance,Paper has low permanent-magnet relevance score.,Review title and abstract before using this record.,2026-06-04T09:08:57+00:00
+24,45,medium,missing_doi,Paper has no DOI.,Export missing DOI report and resolve manually or through another source.,2026-06-04T09:08:57+00:00
+25,52,medium,missing_doi,Paper has no DOI.,Export missing DOI report and resolve manually or through another source.,2026-06-04T09:08:57+00:00
+26,52,medium,low_relevance,Paper has low permanent-magnet relevance score.,Review title and abstract before using this record.,2026-06-04T09:08:57+00:00
+27,53,medium,missing_doi,Paper has no DOI.,Export missing DOI report and resolve manually or through another source.,2026-06-04T09:08:57+00:00
+28,53,medium,low_relevance,Paper has low permanent-magnet relevance score.,Review title and abstract before using this record.,2026-06-04T09:08:57+00:00
+29,54,medium,missing_doi,Paper has no DOI.,Export missing DOI report and resolve manually or through another source.,2026-06-04T09:08:57+00:00
+30,54,medium,low_relevance,Paper has low permanent-magnet relevance score.,Review title and abstract before using this record.,2026-06-04T09:08:57+00:00
+31,57,medium,missing_doi,Paper has no DOI.,Export missing DOI report and resolve manually or through another source.,2026-06-04T09:08:57+00:00
+32,58,medium,low_relevance,Paper has low permanent-magnet relevance score.,Review title and abstract before using this record.,2026-06-04T09:08:57+00:00

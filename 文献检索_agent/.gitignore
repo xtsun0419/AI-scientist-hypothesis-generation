@@ -1,0 +1,3 @@
+configs/local.env
+configs/external_llm_apis.json
+data/manual_pdfs/

@@ -35,6 +35,16 @@ def question_synthesis_chat(message: str) -> dict[str, Any]:
         db.close()
 
 
+def question_synthesis_confirm() -> dict[str, Any]:
+    QuestionSynthesisAgent, QuestionSynthesisDB, default_db_path = _load_question_synthesis()
+    db = QuestionSynthesisDB(default_db_path())
+    db.init_schema()
+    try:
+        return QuestionSynthesisAgent(db).confirm()
+    finally:
+        db.close()
+
+
 def question_synthesis_reset() -> dict[str, Any]:
     QuestionSynthesisAgent, QuestionSynthesisDB, default_db_path = _load_question_synthesis()
     db = QuestionSynthesisDB(default_db_path())

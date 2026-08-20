@@ -58,3 +58,34 @@ def test_route_candidate_post_redirects_after_generation(monkeypatch) -> None:
     assert redirects
     assert redirects[0].startswith("/route-candidates?message=")
     assert "question_id=5" in redirects[0]
+
+
+def test_merge_question_options_confirmed_first() -> None:
+    import route_candidate_agent.agent as module
+
+    retrieval = [{"id": 1, "source": "01 文献获取", "title": "Retrieval goal", "description": ""}]
+    context = {"retrieval_questions": ["q1"], "wiki_pages": [{"title": "w", "open_questions": ["oq"]}]}
+    confirmed = [
+        {"id": 20001, "source": "03 确认问题", "title": "Confirmed problem", "description": "", "evidence_ids": ["p:1:e1"]}
+    ]
+    merged = module.merge_question_options(retrieval, context, confirmed)
+    assert merged[0]["source"] == "03 确认问题"
+    assert merged[0]["id"] == 20001
+    assert len(merged) == 4
+    # confirmed 与 retrieval 同名时去重，confirmed 保留
+    duplicated = [{"id": 1, "source": "01 文献获取", "title": "confirmed problem", "description": ""}]
+    merged2 = module.merge_question_options(duplicated, context, confirmed)
+    assert merged2[0]["source"] == "03 确认问题"
+    assert all(item["source"] != "01 文献获取" for item in merged2 if item["title"].lower() == "confirmed problem")
+
+
+def test_annotate_evidence_marks_supported_and_inferred() -> None:
+    import route_candidate_agent.agent as module
+
+    routes = [{"evidence": ["p:1:e1 支撑了该机制", "这是一条纯推测"], "risks": []}]
+    annotated = module.annotate_evidence(routes, ["p:1:e1"])
+    annotations = annotated[0]["evidence_annotations"]
+    assert annotations[0]["kind"] == "证据支撑"
+    assert annotations[0]["matched_ids"] == ["p:1:e1"]
+    assert annotations[1]["kind"] == "推测"
+    assert annotations[1]["matched_ids"] == []

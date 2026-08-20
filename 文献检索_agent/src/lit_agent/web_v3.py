@@ -31,13 +31,16 @@ from .llm import LLMSettings
 from .question_synthesis_bridge import (
     question_synthesis_agent_dir,
     question_synthesis_chat,
+    question_synthesis_confirm,
     question_synthesis_data_dir,
     question_synthesis_reset,
     question_synthesis_state,
 )
 from .route_candidate_bridge import (
     route_candidate_agent_dir,
+    route_candidate_critique,
     route_candidate_data_dir,
+    route_candidate_evolve,
     route_candidate_generate,
     route_candidate_state,
 )
@@ -255,6 +258,18 @@ class V3WebHandler(BaseHTTPRequestHandler):
                 question_synthesis_reset()
                 self._redirect(_question_synthesis_message_location("对话已重置，并重新载入检索问题与文献分析结果。"))
                 return
+            if action == "/question-synthesis/confirm":
+                result = question_synthesis_confirm()
+                confirmed = (result.get("confirmed_questions") or [])[0]
+                if confirmed is None:
+                    self._redirect(_question_synthesis_message_location("确认失败：没有生成结构化科学问题。", error=True))
+                    return
+                self._redirect(
+                    _question_synthesis_message_location(
+                        f"已确认科学问题（#{confirmed.get('id')}）：{confirmed.get('problem_statement')}"
+                    )
+                )
+                return
             if action == "/route-candidates/generate":
                 result = route_candidate_generate(
                     question_id=_int(fields.get("question_id"), None),
@@ -267,6 +282,29 @@ class V3WebHandler(BaseHTTPRequestHandler):
                     _route_candidates_message_location(
                         f"已生成 {routes} 条候选路线：{selected.get('title', '')}",
                         question_id=selected.get("id"),
+                    )
+                )
+                return
+            if action == "/route-candidates/critique":
+                result = route_candidate_critique(run_id=fields.get("run_id") or None)
+                latest = result.get("latest_run") or {}
+                mode = (latest.get("critique") or {}).get("mode")
+                mode_label = {"llm": "外部 LLM", "fallback": "确定性规则", "fallback_llm_error": "确定性规则（LLM 失败）"}.get(str(mode), str(mode))
+                self._redirect(
+                    _route_candidates_message_location(
+                        f"批判评审完成（{mode_label}）：已生成四维评分与 Elo 排名",
+                        question_id=latest.get("question_id"),
+                    )
+                )
+                return
+            if action == "/route-candidates/evolve":
+                result = route_candidate_evolve(run_id=fields.get("run_id") or None)
+                latest = result.get("latest_run") or {}
+                routes = len(latest.get("routes") or [])
+                self._redirect(
+                    _route_candidates_message_location(
+                        f"一轮演化完成：生成 {routes} 条 v2 路线（含谱系 lineage）",
+                        question_id=latest.get("question_id"),
                     )
                 )
                 return
@@ -476,6 +514,8 @@ def render_route_candidates(
         state_error = _friendly_error(str(exc))
     metrics = state.get("metrics", {})
     context = state.get("context", {})
+    graph_block = context.get("graph", {})
+    graph_stats = graph_block.get("stats", {})
     selected = state.get("selected_question") or {}
     latest_run = state.get("latest_run") or {}
     routes = list(latest_run.get("routes") or [])
@@ -557,6 +597,8 @@ def render_route_candidates(
       {metric_card("证据缺口", metrics.get("evidence_gaps", 0))}
       {metric_card("Paper Cards", metrics.get("paper_cards", 0))}
       {metric_card("Wiki 条目", metrics.get("wiki_pages", 0))}
+      {metric_card("图谱节点", graph_stats.get("nodes", 0))}
+      {metric_card("图谱边", graph_stats.get("edges", 0))}
       {metric_card("生成模式", "外部 LLM" if llm_configured else "本地草稿")}
     </section>
     <section class="route-workspace">
@@ -570,12 +612,24 @@ def render_route_candidates(
             <input name="route_count" type="number" value="{html.escape(str(latest_run.get("route_count") or 3))}" min="1" max="8">
             <label>偏好补充</label>
             <textarea name="emphasis" placeholder="例如：偏向计算筛选 / 偏向可合成实验 / 重点看矫顽力">{html.escape(str(latest_run.get("emphasis") or ""))}</textarea>
-            <button data-busy="正在根据 01 问题和 03 归纳方向生成候选路线。" type="submit">生成候选路线</button>
+            <button data-busy="正在根据 01 问题和 03 归纳方向生成候选路线。" type="submit">生成候选路线（含批判评审）</button>
           </form>
+          <div class="route-actions">
+            <form method="post" action="/route-candidates/critique">
+              <button class="secondary" data-busy="正在基于独立检索证据对当前路线做批判评审。" type="submit">批判评审（四维 + Elo）</button>
+            </form>
+            <form method="post" action="/route-candidates/evolve">
+              <button class="secondary" data-busy="正在依据批判意见生成 v2 路线。" type="submit">一轮演化 → v2</button>
+            </form>
+          </div>
         </section>
         <section class="panel">
           <div class="panel-head"><h2>03 归纳方向</h2></div>
           {route_direction_block(context)}
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>图谱洞察</h2></div>
+          {route_graph_insights(graph_block)}
         </section>
         <section class="panel">
           <div class="panel-head"><h2>数据文件</h2></div>
@@ -592,6 +646,13 @@ def render_route_candidates(
             <span class="badge {'badge-teal' if routes else 'badge-neutral'}">{html.escape(str(len(routes)))} 条</span>
           </div>
           {route_cards(routes)}
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Critic Arena · 两两比较与 Elo 排名</h2>
+            <span class="badge badge-neutral">独立证据检索 · 防幻觉传播</span>
+          </div>
+          {route_arena_block(latest_run)}
         </section>
         <section class="split">
           <div class="panel">
@@ -670,10 +731,23 @@ def route_run_meta(run: dict[str, Any]) -> str:
         "llm": "外部 LLM",
         "fallback_no_api_key": "本地规则草稿",
         "fallback_llm_error": "LLM 失败后本地草稿",
+        "evolve_llm": "演化 v2（LLM）",
+        "evolve_fallback": "演化 v2（本地修订）",
+        "evolve_fallback_llm_error": "演化 v2（LLM 失败后本地修订）",
     }.get(mode, mode or "未知模式")
+    lineage = list(run.get("lineage") or [])
+    lineage_html = ""
+    if lineage:
+        parent = lineage[0] or {}
+        lineage_html = (
+            ' · 谱系：演化自 '
+            f'{html.escape(str(parent.get("parent_run_id") or ""))}'
+            f'（批判模式 {html.escape(str(parent.get("critique_mode") or "—"))}）'
+        )
     return (
         '<div class="subtle">'
         f'{html.escape(str(run.get("created_at") or ""))} · {html.escape(mode_label)} · {html.escape(str(run.get("model") or ""))}'
+        f'{lineage_html}'
         '</div>'
     )
 
@@ -687,22 +761,165 @@ def route_cards(routes: list[dict[str, Any]]) -> str:
 def route_card(route: dict[str, Any]) -> str:
     priority = str(route.get("priority") or "中")
     priority_class = {"高": "badge-teal", "中": "badge-blue", "低": "badge-neutral"}.get(priority, "badge-neutral")
+    novelty = route.get("graph_novelty") or {}
+    novelty_level = str(novelty.get("level") or "")
+    novelty_class = {"高": "badge-teal", "中": "badge-blue", "低": "badge-neutral"}.get(novelty_level, "badge-neutral")
+    novelty_badge = (
+        f'<span class="badge {novelty_class}" title="{html.escape(str(novelty.get("reason") or ""))}">图新颖性 {html.escape(novelty_level or "—")}</span>'
+        if novelty_level
+        else ""
+    )
+    elo = route.get("elo_rating")
+    elo_rank = route.get("elo_rank")
+    elo_badge = (
+        f'<span class="badge badge-neutral" title="Elo Arena 两两比较评分">Elo {html.escape(str(elo))} · #{html.escape(str(elo_rank))}</span>'
+        if elo is not None
+        else ""
+    )
     return (
         '<article class="route-card">'
         '<div class="route-card-head">'
         f'<span class="route-rank">Route {html.escape(str(route.get("rank") or ""))}</span>'
         f'<span class="badge {priority_class}">优先级 {html.escape(priority)}</span>'
+        f'{novelty_badge}'
+        f'{elo_badge}'
         '</div>'
         f'<h3>{html.escape(str(route.get("title") or "候选路线"))}</h3>'
         f'<p>{html.escape(str(route.get("rationale") or ""))}</p>'
         f'{route_list_block("候选材料 / 结构", route.get("candidates"))}'
         f'{route_list_block("关键变量", route.get("variables"))}'
         f'{route_list_block("验证方式", route.get("validation"))}'
-        f'{route_list_block("证据依据", route.get("evidence"))}'
+        f'{route_evidence_block(route.get("evidence"), route.get("evidence_annotations"))}'
         f'{route_list_block("主要风险", route.get("risks"))}'
+        f'{route_critique_block(route)}'
         f'<div class="route-next"><b>下一步</b><span>{html.escape(str(route.get("next_step") or "待细化"))}</span></div>'
         '</article>'
     )
+
+
+def route_critique_block(route: dict[str, Any]) -> str:
+    """Critic 四维评分条 + 弱点 + 改进建议（评判依据为独立检索证据）。"""
+    critique = route.get("critique") or {}
+    dimensions = critique.get("dimensions") or {}
+    weaknesses = [str(item).strip() for item in critique.get("weaknesses") or [] if str(item).strip()]
+    improvements = [str(item).strip() for item in critique.get("improvements") or [] if str(item).strip()]
+    if not dimensions and not weaknesses and not improvements:
+        return ""
+    parts: list[str] = []
+    bars: list[str] = []
+    for key, label in (("novelty", "新颖性"), ("feasibility", "可行性"), ("evidence", "证据"), ("falsifiability", "可证伪")):
+        item = dimensions.get(key) or {}
+        score = item.get("score")
+        if score is None:
+            continue
+        score = max(0, min(5, int(score)))
+        fill_class = {5: "score-high", 4: "score-high", 3: "score-mid", 2: "score-low", 1: "score-low", 0: "score-low"}[score]
+        bars.append(
+            f'<div class="score-row" title="{html.escape(str(item.get("reason") or ""))}">'
+            f'<span class="score-label">{label}</span>'
+            f'<span class="score-bar"><span class="score-fill {fill_class}" style="width:{score * 20}%"></span></span>'
+            f'<span class="score-num">{score}/5</span>'
+            "</div>"
+        )
+    if bars:
+        parts.append('<div class="critique-dims">' + "".join(bars) + "</div>")
+    if weaknesses:
+        parts.append(
+            '<h4>批判弱点</h4><ul class="critique-weak">'
+            + "".join(f"<li>{html.escape(item)}</li>" for item in weaknesses)
+            + "</ul>"
+        )
+    if improvements:
+        parts.append(
+            '<h4>改进建议</h4><ul class="critique-imp">'
+            + "".join(f"<li>{html.escape(item)}</li>" for item in improvements)
+            + "</ul>"
+        )
+    verification = route.get("independent_verification") or {}
+    if verification:
+        queries = verification.get("queries") or []
+        hit_count = verification.get("hit_count") or 0
+        parts.append(
+            f'<p class="subtle">独立检索：{"、".join(html.escape(str(q)) for q in queries[:6])} → 命中 {hit_count} 条证据来源</p>'
+        )
+    return '<section class="route-block critique-block"><h4>Critic 评审（独立 grounding）</h4>' + "".join(parts) + "</section>"
+
+
+def route_arena_block(run: dict[str, Any]) -> str:
+    """Elo Arena 面板：模式、排名、两两对决记录。"""
+    critique = run.get("critique") or {}
+    arena = critique.get("arena") or {}
+    if not critique:
+        return '<div class="subtle">尚未批判。生成路线后会自动评审，或点击“批判评审”。</div>'
+    mode = str(critique.get("mode") or "")
+    mode_label = {
+        "llm": "外部 LLM 仲裁（基于独立检索证据）",
+        "fallback": "确定性规则（无 LLM，含声称引用独立验证）",
+        "fallback_llm_error": "确定性规则（LLM 失败，含声称引用独立验证）",
+    }.get(mode, mode or "未知")
+    independent = critique.get("independent_search") or {}
+    corpus_size = independent.get("corpus_size")
+    parts = [
+        '<p class="subtle">'
+        f'评审模式：{html.escape(mode_label)} · {html.escape(str(critique.get("created_at") or ""))}'
+        '</p>'
+    ]
+    if corpus_size is not None:
+        parts.append(
+            '<p class="subtle">评判依据：基于路线内容在 02 语料（'
+            f'{html.escape(str(corpus_size))} 篇 Paper Cards / Wiki）上独立检索的证据；'
+            '不读取生成器的证据池与图摘要。</p>'
+        )
+    rankings = arena.get("rankings") or []
+    if rankings:
+        ranking_text = " ＞ ".join(
+            f"路线{html.escape(str(item.get('rank')))}（Elo {html.escape(str(item.get('elo')))}）"
+            for item in rankings
+        )
+        parts.append(f'<p><b>Elo 排名</b><br><span class="subtle">{ranking_text}</span></p>')
+    battles = arena.get("battles") or []
+    if battles:
+        battle_items = []
+        for battle in battles:
+            battle_mode = str(battle.get("mode") or "")
+            mode_suffix = (
+                f'<span class="subtle">（{"LLM" if battle_mode == "llm" else "规则"}）</span>'
+            )
+            reason = str(battle.get("reason") or "")
+            reason_html = f'<br><span class="subtle">{html.escape(reason[:120])}</span>' if reason else ""
+            battle_items.append(
+                f"<li>路线{html.escape(str(battle.get('a')))} vs 路线{html.escape(str(battle.get('b')))} "
+                f"→ 胜者路线{html.escape(str(battle.get('winner')))}{mode_suffix}{reason_html}</li>"
+            )
+        parts.append("<ul class='arena-battles'>" + "".join(battle_items) + "</ul>")
+    return "".join(parts)
+
+
+def route_evidence_block(evidence: Any, annotations: Any) -> str:
+    annotation_by_text = {
+        str(item.get("text") or ""): item
+        for item in (annotations or [])
+        if isinstance(item, dict)
+    }
+    values = [str(item).strip() for item in (evidence or []) if str(item).strip()]
+    if not values:
+        return ""
+    items = []
+    for text in values[:8]:
+        annotation = annotation_by_text.get(text) or {}
+        kind = str(annotation.get("kind") or "")
+        matched = list(annotation.get("matched_ids") or [])
+        if kind == "证据支撑":
+            badge = '<span class="badge badge-teal">证据支撑</span>'
+        elif kind == "推测":
+            badge = '<span class="badge badge-amber">推测</span>'
+        else:
+            badge = ""
+        matched_html = ""
+        if matched:
+            matched_html = '<span class="subtle"> ' + html.escape(", ".join(matched[:4])) + "</span>"
+        items.append(f"<li>{html.escape(text)}{badge}{matched_html}</li>")
+    return '<section class="route-block"><h4>证据依据</h4><ul>' + "".join(items) + "</ul></section>"
 
 
 def route_list_block(title: str, items: Any) -> str:
@@ -736,6 +953,36 @@ def route_run_table(runs: list[dict[str, Any]]) -> str:
     )
 
 
+def route_graph_insights(graph_block: dict[str, Any]) -> str:
+    if not graph_block or not (graph_block.get("stats") or {}).get("loaded"):
+        return '<div class="subtle">知识图谱未加载。先在 02 模块构建知识库（graph.json）。</div>'
+    parts: list[str] = []
+    gaps = list(graph_block.get("gap_candidates") or [])
+    analogies = list(graph_block.get("analogy_candidates") or [])
+    constraints = list(graph_block.get("constraints") or [])
+    feasibility = graph_block.get("feasibility") or {}
+    if gaps:
+        parts.append("<h3>Gap 候选（方法×材料）</h3>" + "".join(
+            f'<article class="graph-insight"><p><b>{html.escape(str(item.get("method") or ""))}</b> 尚未用于 <b>{html.escape(str(item.get("material") or ""))}</b></p></article>'
+            for item in gaps[:6]
+        ))
+    if analogies:
+        parts.append("<h3>类比候选（方法迁移）</h3>" + "".join(
+            f'<article class="graph-insight"><p>{html.escape(str(item.get("method") or ""))}：{html.escape(str(item.get("source_material") or ""))} → {html.escape(str(item.get("target_material") or ""))}（共享 {html.escape(str(item.get("shared_property") or ""))}）</p></article>'
+            for item in analogies[:6]
+        ))
+    if constraints:
+        parts.append("<h3>已知限制</h3>" + "".join(
+            f'<p class="subtle">[{html.escape(str(item.get("topic") or ""))}] {html.escape(str(item.get("limitation") or ""))}</p>'
+            for item in constraints[:5]
+        ))
+    if feasibility.get("loaded") and feasibility.get("unknown"):
+        parts.append("<h3>语料未覆盖</h3>" + compact_list(feasibility["unknown"][:8]))
+    if not parts:
+        return '<div class="subtle">图谱已加载，当前问题下暂无显著的 gap / 类比候选。</div>'
+    return "".join(parts)
+
+
 def route_json_list(value: Any) -> list[str]:
     if isinstance(value, list):
         return [str(item) for item in value if str(item).strip()]
@@ -752,9 +999,13 @@ def route_json_list(value: Any) -> list[str]:
 
 def route_candidate_css() -> str:
     return """
-    .route-shell { display:grid; gap:10px; margin:0 auto; max-width:1560px; padding:12px 18px 42px; }
+    .route-shell { --stage:#16a34a; --stage-deep:#166534; --stage-soft:#f0fdf4; display:grid; gap:10px; margin:0 auto; max-width:1560px; padding:12px 18px 42px; }
+    .route-shell > .metrics { grid-template-columns:repeat(4,minmax(0,1fr)); }
     .route-hero { background:linear-gradient(135deg,#0f172a,#12363f 58%,#166534); min-height:84px; padding:14px 16px; }
     .route-hero h2 { font-size:19px; margin-bottom:4px; }
+    .route-hero .hero-counters span { border-color:rgba(134,239,172,.32); }
+    .route-shell .metric { transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
+    .route-shell .metric:hover { border-color:#86efac; box-shadow:0 10px 24px rgba(22,101,52,.14); transform:translateY(-2px); }
     .route-workspace { align-items:start; display:grid; gap:10px; grid-template-columns:360px minmax(0,1fr); }
     .route-side .panel { background:var(--nav-2); border-color:var(--nav-line); color:#e5eefb; }
     .route-side h2 { color:#f8fafc; }
@@ -772,9 +1023,11 @@ def route_candidate_css() -> str:
       gap:10px;
       min-width:0;
       padding:12px;
+      transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease;
     }
+    .route-card:hover { border-color:#86efac; box-shadow:0 12px 28px rgba(15,23,42,.10); transform:translateY(-2px); }
     .route-card * { min-width:0; overflow-wrap:anywhere; }
-    .route-card-head { align-items:center; display:flex; gap:8px; justify-content:space-between; }
+    .route-card-head { align-items:center; display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; }
     .route-rank { color:var(--primary); font-family:"Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; font-weight:800; text-transform:uppercase; }
     .route-card h3 { color:#0f172a; font-size:16px; line-height:1.35; margin:0; text-transform:none; }
     .route-card p { color:#334155; line-height:1.5; margin:0; }
@@ -792,18 +1045,58 @@ def route_candidate_css() -> str:
       border-radius:8px;
       color:var(--muted);
       display:grid;
+      justify-items:center;
       min-height:260px;
       padding:24px;
       text-align:center;
     }
-    @media (max-width:1100px) { .route-workspace { grid-template-columns:1fr; } .route-grid { grid-template-columns:1fr; } }
-    @media (max-width:640px) { .route-shell { padding:10px 10px 30px; } }
+    .route-empty::before { content:"🧭"; display:block; font-size:32px; line-height:1; margin-bottom:10px; opacity:.85; }
+    .graph-insight {
+      background:#0b1220;
+      border:1px solid #1e3a5f;
+      border-left:3px solid #38bdf8;
+      border-radius:6px;
+      margin:6px 0;
+      padding:7px 9px;
+      transition:border-color .18s ease, background .18s ease;
+    }
+    .graph-insight:hover { background:#0e1830; border-color:#38bdf8; }
+    .graph-insight p { color:#dbeafe; line-height:1.5; margin:0; }
+    .graph-insight b { color:#7dd3fc; }
+    .route-actions { display:grid; gap:7px; margin-top:9px; }
+    .route-actions form { display:grid; }
+    .critique-block { border-top:1px solid #e2e8f0; }
+    .critique-dims { display:grid; gap:6px; margin-bottom:8px; }
+    .score-row { align-items:center; display:grid; gap:8px; grid-template-columns:52px minmax(0,1fr) 36px; }
+    .score-label { color:#475569; font-size:11px; font-weight:750; }
+    .score-bar { background:#e2e8f0; border-radius:999px; display:block; height:7px; overflow:hidden; }
+    .score-fill { border-radius:999px; display:block; height:100%; transition:width .4s ease; }
+    .score-high { background:linear-gradient(90deg,#4ade80,#16a34a); }
+    .score-mid { background:linear-gradient(90deg,#60a5fa,#1e40af); }
+    .score-low { background:linear-gradient(90deg,#fbbf24,#d97706); }
+    .score-num { color:#334155; font-family:"Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; font-weight:800; text-align:right; }
+    .critique-block h4 { color:#475569; font-size:12px; margin:6px 0 0; }
+    .critique-block ul { margin:0; padding-left:18px; }
+    .critique-block li { line-height:1.45; }
+    .critique-weak li { color:#9a3412; }
+    .critique-imp li { color:#166534; }
+    .arena-battles { display:grid; gap:5px; margin:0; padding-left:18px; }
+    .arena-battles li { line-height:1.5; }
+    @media (max-width:1100px) { .route-workspace { grid-template-columns:1fr; } .route-grid { grid-template-columns:1fr; } .route-shell > .metrics { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+    @media (max-width:640px) { .route-shell { padding:10px 10px 30px; } .route-shell > .metrics { grid-template-columns:1fr 1fr; } }
     """
 
 
 def _empty_route_candidate_state() -> dict[str, Any]:
     return {
-        "context": {"metrics": {}, "retrieval_questions": [], "evidence_gaps": [], "paper_cards": [], "wiki_pages": []},
+        "context": {
+            "metrics": {},
+            "retrieval_questions": [],
+            "evidence_gaps": [],
+            "paper_cards": [],
+            "wiki_pages": [],
+            "graph": {"stats": {"loaded": False}, "context": {}, "gap_candidates": [], "analogy_candidates": [], "constraints": [], "feasibility": {}},
+        },
         "questions": [],
         "selected_question": None,
         "latest_run": None,
@@ -825,6 +1118,8 @@ def render_question_synthesis(*, message: str | None = None, error: str | None =
     messages = state.get("messages", [])
     context = state.get("context", {})
     metrics = context.get("metrics", {})
+    confirmed_questions = state.get("confirmed_questions", [])
+    interventions = state.get("interventions", {})
     model_name = state.get("model_name") or "LLM 未配置"
     llm_configured = bool(state.get("llm_configured"))
     return f"""<!doctype html>
@@ -911,9 +1206,17 @@ def render_question_synthesis(*, message: str | None = None, error: str | None =
         <section class="panel">
           <div class="panel-head"><h2>会话操作</h2></div>
           <code>{html.escape(str(question_synthesis_data_dir()))}</code>
+          <form method="post" action="/question-synthesis/confirm">
+            <button data-busy="正在把当前对话收敛为结构化科学问题。" type="submit">确认当前科学问题</button>
+          </form>
+          <p class="subtle">确认后存入 03 数据库，第 4 模块会优先用它生成研究路线。研究者输入次数：{html.escape(str(interventions.get("human_messages", 0)))}</p>
           <form method="post" action="/question-synthesis/reset">
             <button class="secondary" data-busy="正在重置并重新载入上下文。" type="submit">重置对话</button>
           </form>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>已确认科学问题</h2><span class="badge badge-teal">{html.escape(str(len(confirmed_questions)))}</span></div>
+          {question_confirmed_list(confirmed_questions)}
         </section>
       </aside>
       <section class="panel chat-panel">
@@ -938,6 +1241,43 @@ def render_question_synthesis(*, message: str | None = None, error: str | None =
 </html>"""
 
 
+def question_confirmed_list(confirmed: list[dict[str, Any]]) -> str:
+    if not confirmed:
+        return '<div class="subtle">暂无确认的科学问题。在对话中收敛方向后点击“确认当前科学问题”。</div>'
+    return "".join(
+        '<article class="confirmed-item">'
+        f'<h3>#{html.escape(str(item.get("id") or ""))} {html.escape(str(item.get("problem_statement") or ""))}</h3>'
+        f'<p class="subtle">{html.escape(str(item.get("mechanism_hypothesis") or ""))}</p>'
+        f'<p class="subtle">证据：{html.escape(", ".join(item.get("evidence_ids") or []) or "无可追溯证据")} · 模式：{html.escape(str(item.get("mode") or ""))}</p>'
+        '</article>'
+        for item in confirmed[:6]
+    )
+
+
+def paper_analysis_css() -> str:
+    return """
+    .shell { --stage:#0891b2; --stage-deep:#155e75; --stage-soft:#ecfeff; }
+    .paper-hero { background:linear-gradient(135deg,#0f172a,#0c3540 58%,#0e7490); border-color:#155e75; min-height:84px; padding:14px 16px; }
+    .paper-hero h2 { font-size:19px; margin-bottom:4px; }
+    .paper-hero .hero-counters span { border-color:rgba(103,232,249,.32); }
+    .metrics { grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+    .metric { transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
+    .metric:hover { border-color:#67e8f9; box-shadow:0 10px 24px rgba(8,145,178,.14); transform:translateY(-2px); }
+    .metric-rule span { background:var(--stage); }
+    .rag-result, .paper-card, .wiki-item { transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
+    .rag-result:hover, .paper-card:hover, .wiki-item:hover { border-color:#67e8f9; box-shadow:0 12px 26px rgba(8,145,178,.13); transform:translateY(-2px); }
+    .rag-result h3 { border-left:3px solid var(--stage); padding-left:7px; }
+    .graph-empty { justify-items:center; min-height:300px; }
+    .graph-empty::before { content:"🕸️"; display:block; font-size:30px; line-height:1; margin-bottom:10px; opacity:.85; }
+    .filter-check { transition:border-color .16s ease, background .16s ease; }
+    .filter-check:hover { background:#ecfeff; border-color:#67e8f9; }
+    .graph-detail { transition:border-color .16s ease; }
+    .graph-detail:hover { border-color:#67e8f9; }
+    @media (max-width:1100px) { .metrics { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:640px) { .metrics { grid-template-columns:1fr 1fr; } }
+    """
+
+
 def render_paper_analysis(*, message: str | None = None, error: str | None = None, query: str = "") -> str:
     state = load_paper_analysis_state_for_query(query)
     metrics = state["metrics"]
@@ -950,7 +1290,7 @@ def render_paper_analysis(*, message: str | None = None, error: str | None = Non
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>文献知识工作台</title>
-  <style>{base_css()}</style>
+  <style>{base_css()}{paper_analysis_css()}</style>
   <script>
     window.addEventListener('DOMContentLoaded', () => {{
       const busy = document.querySelector('[data-busy]');
@@ -993,7 +1333,7 @@ def render_paper_analysis(*, message: str | None = None, error: str | None = Non
     <div class="notice busy full" data-busy></div>
     {notice(message, "ok") if message else ""}
     {notice(error, "err") if error else ""}
-    <section class="full hero-strip">
+    <section class="full hero-strip paper-hero">
       <div>
         <div class="brand-kicker">Literature Knowledge Workspace</div>
         <h2>RAG 找证据，Paper Cards 摘要论文，轻量图谱理解关系，Wiki 沉淀知识</h2>
@@ -1007,7 +1347,7 @@ def render_paper_analysis(*, message: str | None = None, error: str | None = Non
     </section>
     <section class="full metrics">
       {metric_card("PDF 队列", metrics["pdf_total"])}
-      {metric_card("已转换", metrics["converted"])}
+      {metric_card("已转换", metrics["converted"], ratio=(metrics["converted"] / metrics["pdf_total"]) if metrics["pdf_total"] else None)}
       {metric_card("RAG Chunks", metrics["chunks"])}
       {metric_card("Paper Cards", metrics["cards"])}
       {metric_card("Graph Nodes", metrics["nodes"])}
@@ -1691,6 +2031,22 @@ def base_css() -> str:
     """
 
 
+def literature_css() -> str:
+    return """
+    .shell { --stage:#1e40af; --stage-deep:#1e3a8a; --stage-soft:#dbeafe; }
+    .hero-strip { min-height:88px; padding:16px; }
+    .metric { transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
+    .metric:hover { border-color:#93c5fd; box-shadow:0 10px 24px rgba(30,64,175,.14); transform:translateY(-2px); }
+    .metric-rule span { background:var(--stage); }
+    .panel { transition:border-color .18s ease, box-shadow .18s ease; }
+    .panel:hover { border-color:#b6c8e0; }
+    .workflow .step { transition:background .16s ease; }
+    .workflow .step:not(.active):hover { background:#16233b; }
+    .rag-result, .paper-card, .wiki-item { transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
+    .rag-result:hover, .paper-card:hover, .wiki-item:hover { border-color:#93c5fd; box-shadow:0 12px 26px rgba(30,64,175,.12); transform:translateY(-2px); }
+    """
+
+
 def render_home(*, message: str | None = None, error: str | None = None) -> str:
     state = load_state()
     latest_goal = state["goals"][0] if state["goals"] else None
@@ -1854,6 +2210,7 @@ def render_home(*, message: str | None = None, error: str | None = None) -> str:
     @media (prefers-reduced-motion: reduce) {{ *, *::before, *::after {{ scroll-behavior:auto !important; transition:none !important; }} }}
     @media (max-width:1100px) {{ .shell, .split {{ grid-template-columns:1fr; }} .metrics {{ grid-template-columns:repeat(3,minmax(0,1fr)); }} .workflow {{ grid-template-columns:repeat(3,minmax(0,1fr)); }} .step {{ border-bottom:1px solid var(--line); }} .hero-strip {{ align-items:flex-start; flex-direction:column; }} }}
     @media (max-width:640px) {{ .topbar {{ align-items:flex-start; flex-direction:column; padding:14px 16px; }} .shell {{ padding:12px 16px 32px; }} .metrics, .workflow, .hero-counters {{ grid-template-columns:1fr 1fr; }} .action-form {{ grid-template-columns:1fr; }} }}
+    {literature_css()}
   </style>
   <script>
     window.addEventListener('DOMContentLoaded', () => {{
@@ -1915,7 +2272,7 @@ def render_home(*, message: str | None = None, error: str | None = None) -> str:
       {metric_card("科学问题", metrics["goals"])}
       {metric_card("轮次", metrics["rounds"])}
       {metric_card("本轮候选", metrics["candidates"])}
-      {metric_card("已获 PDF", metrics["downloaded"])}
+      {metric_card("已获 PDF", metrics["downloaded"], ratio=(metrics["downloaded"] / metrics["candidates"]) if metrics["candidates"] else None)}
       {metric_card("手动任务", metrics["manual_pending"])}
       {metric_card("分析记录", metrics["analyses"])}
     </section>
@@ -2110,11 +2467,16 @@ def notice(text: str, klass: str) -> str:
     return f'<div class="notice {klass} full">{html.escape(text)}</div>'
 
 
-def metric_card(label: str, value: object) -> str:
+def metric_card(label: str, value: object, ratio: float | None = None) -> str:
+    rule = ""
+    if ratio is not None:
+        pct = max(0, min(100, round(float(ratio) * 100)))
+        rule = f'<div class="metric-rule"><span style="width:{pct}%"></span></div>'
     return (
         '<div class="metric">'
         f'<div class="metric-value">{html.escape(str(value))}</div>'
         f'<div class="metric-label">{html.escape(label)}</div>'
+        f"{rule}"
         "</div>"
     )
 
@@ -2579,33 +2941,43 @@ def default_frontend_suggestions() -> list[str]:
 
 def question_synthesis_css() -> str:
     return """
-    .question-shell { display:grid; gap:10px; margin:0 auto; max-width:1560px; padding:12px 18px 42px; }
-    .question-hero { background:linear-gradient(135deg,#102a43,#0f3a54 58%,#1e40af); min-height:78px; padding:12px 14px; }
+    .question-shell { --stage:#4f46e5; --stage-deep:#3730a3; --stage-soft:#eef2ff; display:grid; gap:10px; margin:0 auto; max-width:1560px; padding:12px 18px 42px; }
+    .confirmed-item { border-bottom:1px solid var(--nav-line); display:grid; gap:4px; padding:8px 0; }
+    .confirmed-item h3 { color:#f8fafc; font-size:13px; line-height:1.4; margin:0; text-transform:none; }
+    .confirmed-item p { line-height:1.4; margin:0; }
+    .question-hero { background:linear-gradient(135deg,#102a43,#26235c 58%,#4f46e5); border-color:#4c4695; min-height:78px; padding:12px 14px; }
     .question-hero h2 { font-size:18px; margin-bottom:3px; }
     .question-hero .subtle { max-width:920px; }
+    .question-hero .hero-counters span { border-color:rgba(199,210,254,.34); }
     .question-shell > .metrics { grid-template-columns:repeat(6,minmax(0,1fr)); }
-    .question-shell > .metrics .metric { min-height:54px; padding:7px 9px; }
+    .question-shell > .metrics .metric { min-height:54px; padding:7px 9px; transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
+    .question-shell > .metrics .metric:hover { border-color:#a5b4fc; box-shadow:0 10px 24px rgba(79,70,229,.15); transform:translateY(-2px); }
     .question-shell > .metrics .metric-value { font-size:18px; margin-bottom:3px; }
     .question-shell > .metrics .metric-rule { display:none; }
     .chat-workspace { align-items:start; display:grid; gap:10px; grid-template-columns:360px minmax(0,1fr); }
     .question-context { min-width:0; }
     .question-context .panel { background:var(--nav-2); border-color:var(--nav-line); color:#e5eefb; box-shadow:0 14px 32px rgba(15,23,42,.18); }
     .question-context h2 { color:#f8fafc; }
-    .question-context h3 { color:#93c5fd; margin:10px 0 7px; }
+    .question-context h3 { color:#a5b4fc; margin:10px 0 7px; }
     .question-context .subtle, .question-context li { color:#cbd5e1; }
     .question-context code { background:#0b1220; border-color:#334155; color:#dbeafe; white-space:normal; }
-    .context-card { background:rgba(15,23,42,.38); border:1px solid rgba(148,163,184,.24); border-radius:8px; display:grid; gap:7px; margin-bottom:8px; padding:9px; }
+    .context-card { background:rgba(15,23,42,.38); border:1px solid rgba(148,163,184,.24); border-radius:8px; display:grid; gap:7px; margin-bottom:8px; padding:9px; transition:border-color .16s ease, background .16s ease; }
+    .context-card:hover { background:rgba(30,27,75,.42); border-color:rgba(165,180,252,.5); }
     .context-card h3 { color:#f8fafc; font-size:13px; margin:0; text-transform:none; }
     .context-card p { color:#e2e8f0; line-height:1.45; margin:0; }
     .chat-panel { align-self:start; display:grid; grid-template-rows:auto minmax(520px,1fr) auto; height:min(860px, max(640px, calc(100vh - 180px))); min-height:640px; position:sticky; top:86px; }
     .chat-log { align-content:start; display:grid; gap:12px; min-height:520px; overflow:auto; padding:6px; }
-    .bubble { border:1px solid var(--line); border-radius:8px; display:grid; gap:7px; max-width:min(760px,92%); padding:11px 12px; }
+    .bubble { border:1px solid var(--line); border-radius:12px; display:grid; gap:7px; max-width:min(760px,92%); padding:11px 12px; transition:box-shadow .18s ease, border-color .18s ease; }
+    .bubble:hover { box-shadow:0 8px 22px rgba(15,23,42,.09); }
     .bubble-left { justify-self:start; }
     .bubble-right, .bubble-user { justify-self:end; }
-    .bubble-retrieval { background:#f8fafc; border-left:4px solid var(--cyan); }
-    .bubble-llm { background:#eff6ff; border-right:4px solid var(--primary); }
-    .bubble-user { background:#f0fdf4; border-right:4px solid var(--ok); }
+    .bubble-retrieval { background:#f8fafc; border-left:4px solid var(--cyan); border-radius:12px; }
+    .bubble-llm { background:linear-gradient(180deg,#eff6ff,#e9edff); border-left:4px solid var(--stage); border-radius:3px 12px 12px 12px; }
+    .bubble-user { background:linear-gradient(180deg,#f0fdf4,#e7f9ee); border-right:4px solid var(--ok); border-radius:12px 3px 12px 12px; }
     .bubble-meta { color:var(--muted); display:flex; flex-wrap:wrap; font-size:11px; font-weight:800; gap:8px; text-transform:uppercase; }
+    .bubble-user .bubble-meta::before { content:"🧑\u200d🔬"; }
+    .bubble-retrieval.bubble-user .bubble-meta::before { content:"🔎"; }
+    .bubble-llm .bubble-meta::before { content:"🤖"; }
     .bubble-content { color:#1f2937; display:grid; gap:8px; line-height:1.55; overflow-wrap:anywhere; }
     .bubble-content p { margin:0; }
     .bubble-content h3 { color:#0f172a; font-size:14px; line-height:1.35; margin:6px 0 0; text-transform:none; }
@@ -2614,7 +2986,7 @@ def question_synthesis_css() -> str:
     .suggestion-strip { align-items:center; display:grid; gap:7px; justify-self:center; margin:-4px 0 4px; width:min(620px,86%); }
     .suggestion-strip form { display:block; width:100%; }
     .suggestion-button { background:#f8fafc; border:1px solid #dbeafe; border-radius:8px; color:#64748b; font-size:12px; font-weight:650; line-height:1.35; min-height:30px; padding:7px 9px; text-align:left; width:100%; }
-    .suggestion-button:hover { background:#eff6ff; border-color:#bfdbfe; color:#334155; transform:none; }
+    .suggestion-button:hover { background:#eef2ff; border-color:#a5b4fc; color:#3730a3; transform:translateY(-1px); }
     .chat-input { border-top:1px solid var(--line); display:grid; gap:8px; grid-template-columns:minmax(0,1fr) auto; padding-top:10px; }
     .chat-input textarea { min-height:50px; resize:vertical; }
     .chat-input button { align-self:end; min-height:50px; min-width:88px; }
@@ -2628,6 +3000,8 @@ def _empty_question_synthesis_state() -> dict[str, Any]:
     return {
         "session": None,
         "messages": [],
+        "confirmed_questions": [],
+        "interventions": {"human_messages": 0},
         "context": {"metrics": {}, "retrieval_questions": [], "evidence_gaps": [], "paper_cards": [], "wiki_pages": []},
         "model_name": "LLM 未配置",
         "llm_configured": False,

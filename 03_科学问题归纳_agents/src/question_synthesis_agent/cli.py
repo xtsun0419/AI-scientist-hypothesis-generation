@@ -42,6 +42,23 @@ def main(argv: list[str] | None = None) -> None:
             agent.reset()
             print("Question synthesis conversation reset.")
             return
+        if args.command == "confirm":
+            state = agent.confirm()
+            latest = state["confirmed_questions"][0] if state["confirmed_questions"] else None
+            if latest is None:
+                print("No confirmed question was saved.")
+                return
+            if args.json:
+                print(json.dumps(latest, ensure_ascii=False, indent=2))
+            else:
+                print(f"确认问题已保存 (#{latest['id']}):")
+                print(f"- 问题陈述：{latest['problem_statement']}")
+                print(f"- 关键变量：{', '.join(latest['variables']) or '待补充'}")
+                print(f"- 机制假设：{latest['mechanism_hypothesis']}")
+                print(f"- 验证判据：{'; '.join(latest['validation_criteria']) or '待补充'}")
+                print(f"- 证据：{', '.join(latest['evidence_ids']) or '无可追溯证据'}")
+                print(f"- 模式：{latest['mode']}")
+            return
     finally:
         db.close()
 
@@ -56,6 +73,8 @@ def build_parser() -> argparse.ArgumentParser:
     chat = sub.add_parser("chat")
     chat.add_argument("message")
     sub.add_parser("reset")
+    confirm = sub.add_parser("confirm")
+    confirm.add_argument("--json", action="store_true")
     return parser
 
 

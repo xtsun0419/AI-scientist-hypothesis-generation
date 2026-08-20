@@ -33,6 +33,18 @@ def route_candidate_generate(
     return RouteCandidateAgent().generate(question_id=question_id, route_count=route_count, emphasis=emphasis)
 
 
+def route_candidate_critique(*, run_id: str | None = None) -> dict[str, Any]:
+    RouteCandidateAgent = _load_route_candidate_agent()
+    apply_active_llm_to_env()
+    return RouteCandidateAgent().critique(run_id=run_id)
+
+
+def route_candidate_evolve(*, run_id: str | None = None) -> dict[str, Any]:
+    RouteCandidateAgent = _load_route_candidate_agent()
+    apply_active_llm_to_env()
+    return RouteCandidateAgent().evolve(run_id=run_id)
+
+
 def _load_route_candidate_agent() -> Any:
     src_dir = route_candidate_agent_dir() / "src"
     if not src_dir.exists():

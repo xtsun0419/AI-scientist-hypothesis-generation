@@ -25,3 +25,11 @@ def default_retrieval_agent_dir() -> Path:
 
 def default_question_synthesis_agent_dir() -> Path:
     return workspace_root() / "03_科学问题归纳_agents"
+
+
+def default_analysis_agent_dir() -> Path:
+    return workspace_root() / "文献分析_agent"
+
+
+def default_graph_path() -> Path:
+    return default_analysis_agent_dir() / "data" / "graph" / "graph.json"

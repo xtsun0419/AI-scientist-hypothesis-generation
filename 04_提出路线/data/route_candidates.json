@@ -2,6 +2,1783 @@
   "version": 1,
   "runs": [
     {
+      "id": "2026-08-20T032139Z0000",
+      "created_at": "2026-08-20T03:21:39+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 3,
+      "emphasis": "",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "LLM 未配置 - 本地规则草稿",
+      "metadata": {
+        "mode": "fallback_no_api_key"
+      },
+      "evidence_pool_size": 8,
+      "graph": {
+        "loaded": true,
+        "nodes": 35,
+        "edges": 34,
+        "materials": 6,
+        "methods": 3,
+        "properties": 4,
+        "papers": 1
+      },
+      "snapshot": {
+        "question": {
+          "id": 5,
+          "source": "01 文献获取",
+          "title": "永磁体里Fe原子什么环境下磁矩最大",
+          "description": "关注稀土永磁",
+          "goal_id": 5
+        },
+        "evidence_pool": [
+          "p:32:p00029",
+          "p:32:p00010",
+          "p:32:p00008",
+          "p:32:p00031",
+          "p:32:p00009",
+          "p:32:p00021",
+          "p:32:p00006",
+          "p:32:p00017"
+        ],
+        "graph": {
+          "loaded": true,
+          "matched_entities": [],
+          "related_nodes": [],
+          "related_evidence_ids": [],
+          "gap_candidates": [],
+          "analogy_candidates": [],
+          "constraints": [
+            "https://doi.org/10.1016/j.eng.2019.11.006 2095-8099/\u0001 2020 THE AUTHORS. Published by Elsevier LTD on behalf of Chinese Academy of Engineering and Higher Education Press Limited Company. This is an open access article under the CC BY-NC-ND license (http://creativecommons.org/licenses/by-nc-nd/4.0/)."
+          ]
+        },
+        "emphasis": ""
+      },
+      "routes": [
+        {
+          "title": "机制优先路线：锁定性能退化的关键变量",
+          "rationale": "围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。",
+          "rank": 1,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              },
+              {
+                "id": "material:mnal",
+                "type": "material",
+                "label": "MnAl"
+              }
+            ],
+            "pairs": []
+          },
+          "critique": {
+            "dimensions": {
+              "novelty": {
+                "score": 5,
+                "reason": "图中未发现该组合被探索：路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索"
+              },
+              "feasibility": {
+                "score": 4,
+                "reason": "候选未触发已知限制，语料覆盖范围内可行"
+              },
+              "evidence": {
+                "score": 5,
+                "reason": "全部 3 条证据引用真实 id（共 3 处），且均被独立检索复现"
+              },
+              "falsifiability": {
+                "score": 5,
+                "reason": "验证方式含定量/对比判据，可判定假设成立与否"
+              }
+            },
+            "total": 19,
+            "weaknesses": [
+              "未发现明显结构性问题，需结合实验可行性专家复核"
+            ],
+            "improvements": [
+              "保持方向，进入最小验证实验设计"
+            ]
+          },
+          "elo_rating": 1296.0,
+          "elo_rank": 1,
+          "independent_verification": {
+            "queries": [
+              "NdFeB",
+              "rare-earth-reduced permanent magnets",
+              "rare-earth-free permanent magnets",
+              "FeNi",
+              "MnAl",
+              "晶粒尺寸/取向",
+              "晶界相磁性与厚度",
+              "缺陷、孪晶或反相边界",
+              "成分替换比例",
+              "机制优先路线：锁定性能退化的关键变量"
+            ],
+            "hit_count": 5,
+            "hit_evidence_ids": [
+              "p:32:p00029",
+              "p:32:p00010",
+              "p:32:p00008"
+            ]
+          }
+        },
+        {
+          "title": "候选体系路线：成分/结构空间筛选",
+          "rationale": "把 02/03 中出现的材料、方法和开放问题转为有限候选集合，用统一指标做第一轮排序。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "主相稳定性",
+            "磁晶各向异性",
+            "饱和磁化强度",
+            "交换刚度",
+            "热稳定性"
+          ],
+          "validation": [
+            "高通量 DFT 或数据库筛选",
+            "微磁模拟估计上限",
+            "与文献 Paper Cards 中的基准值对比"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "筛选命中不等于可合成",
+            "0 K 计算和室温性能之间可能存在偏差"
+          ],
+          "priority": "中",
+          "next_step": "确定候选体系白名单和必须满足的硬约束，再生成计算/实验矩阵。",
+          "rank": 2,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              },
+              {
+                "id": "material:mnal",
+                "type": "material",
+                "label": "MnAl"
+              },
+              {
+                "id": "material:ferrite",
+                "type": "material",
+                "label": "ferrite"
+              }
+            ],
+            "pairs": []
+          },
+          "critique": {
+            "dimensions": {
+              "novelty": {
+                "score": 5,
+                "reason": "图中未发现该组合被探索：路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索"
+              },
+              "feasibility": {
+                "score": 4,
+                "reason": "候选未触发已知限制，语料覆盖范围内可行"
+              },
+              "evidence": {
+                "score": 5,
+                "reason": "全部 3 条证据引用真实 id（共 3 处），且均被独立检索复现"
+              },
+              "falsifiability": {
+                "score": 5,
+                "reason": "验证方式含定量/对比判据，可判定假设成立与否"
+              }
+            },
+            "total": 19,
+            "weaknesses": [
+              "未发现明显结构性问题，需结合实验可行性专家复核"
+            ],
+            "improvements": [
+              "保持方向，进入最小验证实验设计"
+            ]
+          },
+          "elo_rating": 1280.0,
+          "elo_rank": 2,
+          "independent_verification": {
+            "queries": [
+              "NdFeB",
+              "rare-earth-reduced permanent magnets",
+              "rare-earth-free permanent magnets",
+              "FeNi",
+              "MnAl",
+              "ferrite",
+              "主相稳定性",
+              "磁晶各向异性",
+              "饱和磁化强度",
+              "交换刚度",
+              "热稳定性",
+              "候选体系路线：成分/结构空间筛选"
+            ],
+            "hit_count": 6,
+            "hit_evidence_ids": [
+              "p:32:p00029",
+              "p:32:p00010",
+              "p:32:p00008"
+            ]
+          }
+        },
+        {
+          "title": "工艺-微结构路线：从可制备性反推路线",
+          "rationale": "优先选择能被实验工艺控制的变量，让路线可以进入后续计算/实验规划。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi"
+          ],
+          "variables": [
+            "退火温度/时间",
+            "扩散源或添加元素",
+            "晶界连续性",
+            "织构与致密度"
+          ],
+          "validation": [
+            "小矩阵工艺实验",
+            "EBSD/TEM 等微结构表征",
+            "用 coercivity, energy product, magnetization, anisotropy 做性能闭环"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "工艺变量耦合较强，单因素解释可能不稳",
+            "样品制备成本高于纯计算路线"
+          ],
+          "priority": "中",
+          "next_step": "选择 2-3 个最容易控制的工艺变量，设计最小正交矩阵。",
+          "rank": 3,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              }
+            ],
+            "pairs": []
+          },
+          "critique": {
+            "dimensions": {
+              "novelty": {
+                "score": 5,
+                "reason": "图中未发现该组合被探索：路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索"
+              },
+              "feasibility": {
+                "score": 4,
+                "reason": "候选未触发已知限制，语料覆盖范围内可行"
+              },
+              "evidence": {
+                "score": 5,
+                "reason": "全部 3 条证据引用真实 id（共 3 处），且均被独立检索复现"
+              },
+              "falsifiability": {
+                "score": 3,
+                "reason": "有验证方式但缺少定量判据，证伪强度有限"
+              }
+            },
+            "total": 17,
+            "weaknesses": [
+              "未发现明显结构性问题，需结合实验可行性专家复核"
+            ],
+            "improvements": [
+              "保持方向，进入最小验证实验设计"
+            ]
+          },
+          "elo_rating": 1184.0,
+          "elo_rank": 3,
+          "independent_verification": {
+            "queries": [
+              "NdFeB",
+              "rare-earth-reduced permanent magnets",
+              "rare-earth-free permanent magnets",
+              "FeNi",
+              "退火温度/时间",
+              "扩散源或添加元素",
+              "晶界连续性",
+              "织构与致密度",
+              "工艺-微结构路线：从可制备性反推路线"
+            ],
+            "hit_count": 4,
+            "hit_evidence_ids": [
+              "p:32:p00029",
+              "p:32:p00010",
+              "p:32:p00008"
+            ]
+          }
+        }
+      ],
+      "critique": {
+        "mode": "fallback_llm_error",
+        "error": "LLM request failed: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)>",
+        "created_at": "2026-08-20T06:24:06+00:00",
+        "model": null,
+        "arena": {
+          "battles": [
+            {
+              "a": 1,
+              "b": 2,
+              "winner": 1,
+              "reason": "按确定性四维总分裁决",
+              "mode": "deterministic"
+            },
+            {
+              "a": 2,
+              "b": 3,
+              "winner": 2,
+              "reason": "按确定性四维总分裁决",
+              "mode": "llm_failed"
+            }
+          ],
+          "ratings": {
+            "1": 1296.0,
+            "2": 1280.0,
+            "3": 1184.0
+          },
+          "rankings": [
+            {
+              "rank": 1,
+              "elo": 1296.0
+            },
+            {
+              "rank": 2,
+              "elo": 1280.0
+            },
+            {
+              "rank": 3,
+              "elo": 1184.0
+            }
+          ],
+          "arena_mode": "deterministic"
+        },
+        "independent_search": {
+          "corpus_size": 14,
+          "per_route": {
+            "1": {
+              "queries": [
+                "NdFeB",
+                "rare-earth-reduced permanent magnets",
+                "rare-earth-free permanent magnets",
+                "FeNi",
+                "MnAl",
+                "晶粒尺寸/取向",
+                "晶界相磁性与厚度",
+                "缺陷、孪晶或反相边界",
+                "成分替换比例",
+                "机制优先路线：锁定性能退化的关键变量"
+              ],
+              "hit_count": 5
+            },
+            "2": {
+              "queries": [
+                "NdFeB",
+                "rare-earth-reduced permanent magnets",
+                "rare-earth-free permanent magnets",
+                "FeNi",
+                "MnAl",
+                "ferrite",
+                "主相稳定性",
+                "磁晶各向异性",
+                "饱和磁化强度",
+                "交换刚度",
+                "热稳定性",
+                "候选体系路线：成分/结构空间筛选"
+              ],
+              "hit_count": 6
+            },
+            "3": {
+              "queries": [
+                "NdFeB",
+                "rare-earth-reduced permanent magnets",
+                "rare-earth-free permanent magnets",
+                "FeNi",
+                "退火温度/时间",
+                "扩散源或添加元素",
+                "晶界连续性",
+                "织构与致密度",
+                "工艺-微结构路线：从可制备性反推路线"
+              ],
+              "hit_count": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "2026-08-20T025900Z0000",
+      "created_at": "2026-08-20T02:59:00+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 3,
+      "emphasis": "偏向可验证路线",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "LLM 未配置 - 本地规则草稿",
+      "metadata": {
+        "mode": "evolve_fallback"
+      },
+      "evidence_pool_size": 8,
+      "graph": {
+        "loaded": true,
+        "nodes": 35,
+        "edges": 34,
+        "materials": 6,
+        "methods": 3,
+        "properties": 4,
+        "papers": 1
+      },
+      "snapshot": {
+        "question": {
+          "id": 5,
+          "source": "01 文献获取",
+          "title": "永磁体里Fe原子什么环境下磁矩最大",
+          "description": "关注稀土永磁",
+          "goal_id": 5
+        },
+        "evidence_pool": [
+          "p:32:p00029",
+          "p:32:p00010",
+          "p:32:p00008",
+          "p:32:p00031",
+          "p:32:p00009",
+          "p:32:p00021",
+          "p:32:p00006",
+          "p:32:p00017"
+        ],
+        "graph": {
+          "loaded": true,
+          "matched_entities": [],
+          "related_nodes": [],
+          "related_evidence_ids": [],
+          "gap_candidates": [],
+          "analogy_candidates": [],
+          "constraints": [
+            "https://doi.org/10.1016/j.eng.2019.11.006 2095-8099/\u0001 2020 THE AUTHORS. Published by Elsevier LTD on behalf of Chinese Academy of Engineering and Higher Education Press Limited Company. This is an open access article under the CC BY-NC-ND license (http://creativecommons.org/licenses/by-nc-nd/4.0/)."
+          ]
+        },
+        "emphasis": "偏向可验证路线"
+      },
+      "lineage": [
+        {
+          "parent_run_id": "2026-08-20T025851Z0000",
+          "parent_created_at": "2026-08-20T02:58:51+00:00",
+          "critique_mode": "fallback"
+        }
+      ],
+      "routes": [
+        {
+          "title": "v2·机制优先路线：锁定性能退化的关键变量",
+          "rationale": "（v2 修订，依据批判意见：保持方向，进入最小验证实验设计）围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。 ｜ v2 改进方向：保持方向，进入最小验证实验设计",
+          "rank": 1,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              },
+              {
+                "id": "material:mnal",
+                "type": "material",
+                "label": "MnAl"
+              }
+            ],
+            "pairs": []
+          },
+          "critique": {
+            "dimensions": {
+              "novelty": {
+                "score": 5,
+                "reason": "图中未发现该组合被探索：路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索"
+              },
+              "feasibility": {
+                "score": 4,
+                "reason": "候选未触发已知限制，语料覆盖范围内可行"
+              },
+              "evidence": {
+                "score": 5,
+                "reason": "全部 3 条证据均引用真实证据 id（共 3 处）"
+              },
+              "falsifiability": {
+                "score": 5,
+                "reason": "验证方式含定量/对比判据，可判定假设成立与否"
+              }
+            },
+            "total": 19,
+            "weaknesses": [
+              "未发现明显结构性问题，需结合实验可行性专家复核"
+            ],
+            "improvements": [
+              "保持方向，进入最小验证实验设计"
+            ]
+          },
+          "elo_rating": 1296.0,
+          "elo_rank": 1
+        },
+        {
+          "title": "v2·候选体系路线：成分/结构空间筛选",
+          "rationale": "（v2 修订，依据批判意见：保持方向，进入最小验证实验设计）把 02/03 中出现的材料、方法和开放问题转为有限候选集合，用统一指标做第一轮排序。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "主相稳定性",
+            "磁晶各向异性",
+            "饱和磁化强度",
+            "交换刚度",
+            "热稳定性"
+          ],
+          "validation": [
+            "高通量 DFT 或数据库筛选",
+            "微磁模拟估计上限",
+            "与文献 Paper Cards 中的基准值对比"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "筛选命中不等于可合成",
+            "0 K 计算和室温性能之间可能存在偏差"
+          ],
+          "priority": "中",
+          "next_step": "确定候选体系白名单和必须满足的硬约束，再生成计算/实验矩阵。 ｜ v2 改进方向：保持方向，进入最小验证实验设计",
+          "rank": 2,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              },
+              {
+                "id": "material:mnal",
+                "type": "material",
+                "label": "MnAl"
+              },
+              {
+                "id": "material:ferrite",
+                "type": "material",
+                "label": "ferrite"
+              }
+            ],
+            "pairs": []
+          },
+          "critique": {
+            "dimensions": {
+              "novelty": {
+                "score": 5,
+                "reason": "图中未发现该组合被探索：路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索"
+              },
+              "feasibility": {
+                "score": 4,
+                "reason": "候选未触发已知限制，语料覆盖范围内可行"
+              },
+              "evidence": {
+                "score": 5,
+                "reason": "全部 3 条证据均引用真实证据 id（共 3 处）"
+              },
+              "falsifiability": {
+                "score": 5,
+                "reason": "验证方式含定量/对比判据，可判定假设成立与否"
+              }
+            },
+            "total": 19,
+            "weaknesses": [
+              "未发现明显结构性问题，需结合实验可行性专家复核"
+            ],
+            "improvements": [
+              "保持方向，进入最小验证实验设计"
+            ]
+          },
+          "elo_rating": 1280.0,
+          "elo_rank": 2
+        },
+        {
+          "title": "v2·工艺-微结构路线：从可制备性反推路线",
+          "rationale": "（v2 修订，依据批判意见：保持方向，进入最小验证实验设计）优先选择能被实验工艺控制的变量，让路线可以进入后续计算/实验规划。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi"
+          ],
+          "variables": [
+            "退火温度/时间",
+            "扩散源或添加元素",
+            "晶界连续性",
+            "织构与致密度"
+          ],
+          "validation": [
+            "小矩阵工艺实验",
+            "EBSD/TEM 等微结构表征",
+            "用 coercivity, energy product, magnetization, anisotropy 做性能闭环"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "工艺变量耦合较强，单因素解释可能不稳",
+            "样品制备成本高于纯计算路线"
+          ],
+          "priority": "中",
+          "next_step": "选择 2-3 个最容易控制的工艺变量，设计最小正交矩阵。 ｜ v2 改进方向：保持方向，进入最小验证实验设计",
+          "rank": 3,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              }
+            ],
+            "pairs": []
+          },
+          "critique": {
+            "dimensions": {
+              "novelty": {
+                "score": 5,
+                "reason": "图中未发现该组合被探索：路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索"
+              },
+              "feasibility": {
+                "score": 4,
+                "reason": "候选未触发已知限制，语料覆盖范围内可行"
+              },
+              "evidence": {
+                "score": 5,
+                "reason": "全部 3 条证据均引用真实证据 id（共 3 处）"
+              },
+              "falsifiability": {
+                "score": 3,
+                "reason": "有验证方式但缺少定量判据，证伪强度有限"
+              }
+            },
+            "total": 17,
+            "weaknesses": [
+              "未发现明显结构性问题，需结合实验可行性专家复核"
+            ],
+            "improvements": [
+              "保持方向，进入最小验证实验设计"
+            ]
+          },
+          "elo_rating": 1184.0,
+          "elo_rank": 3
+        }
+      ],
+      "critique": {
+        "mode": "fallback",
+        "error": null,
+        "created_at": "2026-08-20T02:59:00+00:00",
+        "model": null,
+        "arena": {
+          "battles": [
+            {
+              "a": 1,
+              "b": 2,
+              "winner": 1,
+              "reason": "按确定性四维总分裁决",
+              "mode": "deterministic"
+            },
+            {
+              "a": 2,
+              "b": 3,
+              "winner": 2,
+              "reason": "按确定性四维总分裁决",
+              "mode": "deterministic"
+            }
+          ],
+          "ratings": {
+            "1": 1296.0,
+            "2": 1280.0,
+            "3": 1184.0
+          },
+          "rankings": [
+            {
+              "rank": 1,
+              "elo": 1296.0
+            },
+            {
+              "rank": 2,
+              "elo": 1280.0
+            },
+            {
+              "rank": 3,
+              "elo": 1184.0
+            }
+          ],
+          "arena_mode": "deterministic"
+        }
+      }
+    },
+    {
+      "id": "2026-08-20T025851Z0000",
+      "created_at": "2026-08-20T02:58:51+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 3,
+      "emphasis": "偏向可验证路线",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "LLM 未配置 - 本地规则草稿",
+      "metadata": {
+        "mode": "fallback_no_api_key"
+      },
+      "evidence_pool_size": 8,
+      "graph": {
+        "loaded": true,
+        "nodes": 35,
+        "edges": 34,
+        "materials": 6,
+        "methods": 3,
+        "properties": 4,
+        "papers": 1
+      },
+      "snapshot": {
+        "question": {
+          "id": 5,
+          "source": "01 文献获取",
+          "title": "永磁体里Fe原子什么环境下磁矩最大",
+          "description": "关注稀土永磁",
+          "goal_id": 5
+        },
+        "evidence_pool": [
+          "p:32:p00029",
+          "p:32:p00010",
+          "p:32:p00008",
+          "p:32:p00031",
+          "p:32:p00009",
+          "p:32:p00021",
+          "p:32:p00006",
+          "p:32:p00017"
+        ],
+        "graph": {
+          "loaded": true,
+          "matched_entities": [],
+          "related_nodes": [],
+          "related_evidence_ids": [],
+          "gap_candidates": [],
+          "analogy_candidates": [],
+          "constraints": [
+            "https://doi.org/10.1016/j.eng.2019.11.006 2095-8099/\u0001 2020 THE AUTHORS. Published by Elsevier LTD on behalf of Chinese Academy of Engineering and Higher Education Press Limited Company. This is an open access article under the CC BY-NC-ND license (http://creativecommons.org/licenses/by-nc-nd/4.0/)."
+          ]
+        },
+        "emphasis": "偏向可验证路线"
+      },
+      "routes": [
+        {
+          "title": "机制优先路线：锁定性能退化的关键变量",
+          "rationale": "围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。",
+          "rank": 1,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              },
+              {
+                "id": "material:mnal",
+                "type": "material",
+                "label": "MnAl"
+              }
+            ],
+            "pairs": []
+          },
+          "critique": {
+            "dimensions": {
+              "novelty": {
+                "score": 5,
+                "reason": "图中未发现该组合被探索：路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索"
+              },
+              "feasibility": {
+                "score": 4,
+                "reason": "候选未触发已知限制，语料覆盖范围内可行"
+              },
+              "evidence": {
+                "score": 5,
+                "reason": "全部 3 条证据均引用真实证据 id（共 3 处）"
+              },
+              "falsifiability": {
+                "score": 5,
+                "reason": "验证方式含定量/对比判据，可判定假设成立与否"
+              }
+            },
+            "total": 19,
+            "weaknesses": [
+              "未发现明显结构性问题，需结合实验可行性专家复核"
+            ],
+            "improvements": [
+              "保持方向，进入最小验证实验设计"
+            ]
+          },
+          "elo_rating": 1296.0,
+          "elo_rank": 1
+        },
+        {
+          "title": "候选体系路线：成分/结构空间筛选",
+          "rationale": "把 02/03 中出现的材料、方法和开放问题转为有限候选集合，用统一指标做第一轮排序。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "主相稳定性",
+            "磁晶各向异性",
+            "饱和磁化强度",
+            "交换刚度",
+            "热稳定性"
+          ],
+          "validation": [
+            "高通量 DFT 或数据库筛选",
+            "微磁模拟估计上限",
+            "与文献 Paper Cards 中的基准值对比"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "筛选命中不等于可合成",
+            "0 K 计算和室温性能之间可能存在偏差"
+          ],
+          "priority": "中",
+          "next_step": "确定候选体系白名单和必须满足的硬约束，再生成计算/实验矩阵。",
+          "rank": 2,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              },
+              {
+                "id": "material:mnal",
+                "type": "material",
+                "label": "MnAl"
+              },
+              {
+                "id": "material:ferrite",
+                "type": "material",
+                "label": "ferrite"
+              }
+            ],
+            "pairs": []
+          },
+          "critique": {
+            "dimensions": {
+              "novelty": {
+                "score": 5,
+                "reason": "图中未发现该组合被探索：路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索"
+              },
+              "feasibility": {
+                "score": 4,
+                "reason": "候选未触发已知限制，语料覆盖范围内可行"
+              },
+              "evidence": {
+                "score": 5,
+                "reason": "全部 3 条证据均引用真实证据 id（共 3 处）"
+              },
+              "falsifiability": {
+                "score": 5,
+                "reason": "验证方式含定量/对比判据，可判定假设成立与否"
+              }
+            },
+            "total": 19,
+            "weaknesses": [
+              "未发现明显结构性问题，需结合实验可行性专家复核"
+            ],
+            "improvements": [
+              "保持方向，进入最小验证实验设计"
+            ]
+          },
+          "elo_rating": 1280.0,
+          "elo_rank": 2
+        },
+        {
+          "title": "工艺-微结构路线：从可制备性反推路线",
+          "rationale": "优先选择能被实验工艺控制的变量，让路线可以进入后续计算/实验规划。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi"
+          ],
+          "variables": [
+            "退火温度/时间",
+            "扩散源或添加元素",
+            "晶界连续性",
+            "织构与致密度"
+          ],
+          "validation": [
+            "小矩阵工艺实验",
+            "EBSD/TEM 等微结构表征",
+            "用 coercivity, energy product, magnetization, anisotropy 做性能闭环"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "工艺变量耦合较强，单因素解释可能不稳",
+            "样品制备成本高于纯计算路线"
+          ],
+          "priority": "中",
+          "next_step": "选择 2-3 个最容易控制的工艺变量，设计最小正交矩阵。",
+          "rank": 3,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              }
+            ],
+            "pairs": []
+          },
+          "critique": {
+            "dimensions": {
+              "novelty": {
+                "score": 5,
+                "reason": "图中未发现该组合被探索：路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索"
+              },
+              "feasibility": {
+                "score": 4,
+                "reason": "候选未触发已知限制，语料覆盖范围内可行"
+              },
+              "evidence": {
+                "score": 5,
+                "reason": "全部 3 条证据均引用真实证据 id（共 3 处）"
+              },
+              "falsifiability": {
+                "score": 3,
+                "reason": "有验证方式但缺少定量判据，证伪强度有限"
+              }
+            },
+            "total": 17,
+            "weaknesses": [
+              "未发现明显结构性问题，需结合实验可行性专家复核"
+            ],
+            "improvements": [
+              "保持方向，进入最小验证实验设计"
+            ]
+          },
+          "elo_rating": 1184.0,
+          "elo_rank": 3
+        }
+      ],
+      "critique": {
+        "mode": "fallback",
+        "error": null,
+        "created_at": "2026-08-20T02:58:51+00:00",
+        "model": null,
+        "arena": {
+          "battles": [
+            {
+              "a": 1,
+              "b": 2,
+              "winner": 1,
+              "reason": "按确定性四维总分裁决",
+              "mode": "deterministic"
+            },
+            {
+              "a": 2,
+              "b": 3,
+              "winner": 2,
+              "reason": "按确定性四维总分裁决",
+              "mode": "deterministic"
+            }
+          ],
+          "ratings": {
+            "1": 1296.0,
+            "2": 1280.0,
+            "3": 1184.0
+          },
+          "rankings": [
+            {
+              "rank": 1,
+              "elo": 1296.0
+            },
+            {
+              "rank": 2,
+              "elo": 1280.0
+            },
+            {
+              "rank": 3,
+              "elo": 1184.0
+            }
+          ],
+          "arena_mode": "deterministic"
+        }
+      }
+    },
+    {
+      "id": "2026-08-20T024156Z0000",
+      "created_at": "2026-08-20T02:41:56+00:00",
+      "question_id": 5,
+      "question_title": "永磁体里Fe原子什么环境下磁矩最大",
+      "question_source": "01 文献获取",
+      "route_count": 3,
+      "emphasis": "偏向可验证路线",
+      "context_fingerprint": "189b4a1802e004582fea2f722c9650223b8ad58a0670178547eefb6ed2b33f5c",
+      "model": "LLM 未配置 - 本地规则草稿",
+      "metadata": {
+        "mode": "fallback_no_api_key"
+      },
+      "evidence_pool_size": 8,
+      "graph": {
+        "loaded": true,
+        "nodes": 35,
+        "edges": 34,
+        "materials": 6,
+        "methods": 3,
+        "properties": 4,
+        "papers": 1
+      },
+      "routes": [
+        {
+          "title": "机制优先路线：锁定性能退化的关键变量",
+          "rationale": "围绕“永磁体里Fe原子什么环境下磁矩最大”先解释变量到性能的因果链，避免直接扩展过大的候选空间。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl"
+          ],
+          "variables": [
+            "晶粒尺寸/取向",
+            "晶界相磁性与厚度",
+            "缺陷、孪晶或反相边界",
+            "成分替换比例"
+          ],
+          "validation": [
+            "micromagnetic simulation, first-principles calculation, machine learning optimization",
+            "把输出指标固定为 coercivity, energy product, magnetization, anisotropy",
+            "对照有/无关键变量的计算或实验结果"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "现有证据可能只支持相关性，尚不足以证明机制"
+          ],
+          "priority": "高",
+          "next_step": "把问题改写成一个明确的变量-机制-性能假设，并列出最小验证样本。",
+          "rank": 1,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              },
+              {
+                "id": "material:mnal",
+                "type": "material",
+                "label": "MnAl"
+              }
+            ],
+            "pairs": []
+          }
+        },
+        {
+          "title": "候选体系路线：成分/结构空间筛选",
+          "rationale": "把 02/03 中出现的材料、方法和开放问题转为有限候选集合，用统一指标做第一轮排序。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi",
+            "MnAl",
+            "ferrite"
+          ],
+          "variables": [
+            "主相稳定性",
+            "磁晶各向异性",
+            "饱和磁化强度",
+            "交换刚度",
+            "热稳定性"
+          ],
+          "validation": [
+            "高通量 DFT 或数据库筛选",
+            "微磁模拟估计上限",
+            "与文献 Paper Cards 中的基准值对比"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "筛选命中不等于可合成",
+            "0 K 计算和室温性能之间可能存在偏差"
+          ],
+          "priority": "中",
+          "next_step": "确定候选体系白名单和必须满足的硬约束，再生成计算/实验矩阵。",
+          "rank": 2,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              },
+              {
+                "id": "material:mnal",
+                "type": "material",
+                "label": "MnAl"
+              },
+              {
+                "id": "material:ferrite",
+                "type": "material",
+                "label": "ferrite"
+              }
+            ],
+            "pairs": []
+          }
+        },
+        {
+          "title": "工艺-微结构路线：从可制备性反推路线",
+          "rationale": "优先选择能被实验工艺控制的变量，让路线可以进入后续计算/实验规划。 研究者偏好：偏向可验证路线。",
+          "candidates": [
+            "NdFeB",
+            "rare-earth-reduced permanent magnets",
+            "rare-earth-free permanent magnets",
+            "FeNi"
+          ],
+          "variables": [
+            "退火温度/时间",
+            "扩散源或添加元素",
+            "晶界连续性",
+            "织构与致密度"
+          ],
+          "validation": [
+            "小矩阵工艺实验",
+            "EBSD/TEM 等微结构表征",
+            "用 coercivity, energy product, magnetization, anisotropy 做性能闭环"
+          ],
+          "evidence": [
+            "p:32:p00029",
+            "p:32:p00010",
+            "p:32:p00008"
+          ],
+          "risks": [
+            "工艺变量耦合较强，单因素解释可能不稳",
+            "样品制备成本高于纯计算路线"
+          ],
+          "priority": "中",
+          "next_step": "选择 2-3 个最容易控制的工艺变量，设计最小正交矩阵。",
+          "rank": 3,
+          "evidence_annotations": [
+            {
+              "text": "p:32:p00029",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00029"
+              ]
+            },
+            {
+              "text": "p:32:p00010",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00010"
+              ]
+            },
+            {
+              "text": "p:32:p00008",
+              "kind": "证据支撑",
+              "matched_ids": [
+                "p:32:p00008"
+              ]
+            }
+          ],
+          "graph_novelty": {
+            "level": "高",
+            "reason": "路线只涉及单一类实体或实体间无对比组合，图语料无法证明该组合已被探索",
+            "matched_entities": [
+              {
+                "id": "material:ndfeb",
+                "type": "material",
+                "label": "NdFeB"
+              },
+              {
+                "id": "material:rare_earth_reduced_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-reduced permanent magnets"
+              },
+              {
+                "id": "material:rare_earth_free_permanent_magnets",
+                "type": "material",
+                "label": "rare-earth-free permanent magnets"
+              },
+              {
+                "id": "material:feni",
+                "type": "material",
+                "label": "FeNi"
+              }
+            ],
+            "pairs": []
+          }
+        }
+      ]
+    },
+    {
       "id": "2026-06-16T055451Z0000",
       "created_at": "2026-06-16T05:54:51+00:00",
       "question_id": 5,

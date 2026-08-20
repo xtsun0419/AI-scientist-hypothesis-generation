@@ -45,3 +45,7 @@ REPORT/*.docx
 # Local Codex/agent workspace metadata
 .codex/
 .agents/
+.qoder-cn/
+
+# Temporary UI review screenshots
+_ui_review/

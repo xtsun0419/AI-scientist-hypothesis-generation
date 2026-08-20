@@ -13,9 +13,28 @@ from pathlib import Path
 from typing import Any
 
 from .config import (
+    default_graph_path,
     default_output_path,
     default_question_synthesis_agent_dir,
     default_retrieval_agent_dir,
+)
+from .critic import (
+    build_evolve_prompt,
+    critique_routes,
+    elo_arena,
+    fallback_evolve,
+    independent_evidence_search,
+)
+from .graph import (
+    KnowledgeGraph,
+    analogy_candidates,
+    constraint_list,
+    feasibility_map,
+    gap_candidates,
+    graph_context,
+    graph_novelty,
+    graph_stats,
+    load_knowledge_graph,
 )
 
 
@@ -144,6 +163,7 @@ class RouteCandidateAgent:
         question_id: int | None = None,
         route_count: int = 3,
         emphasis: str = "",
+        with_critique: bool = True,
     ) -> dict[str, Any]:
         route_count = max(1, min(int(route_count or 3), 8))
         context = collect_context()
@@ -151,7 +171,16 @@ class RouteCandidateAgent:
         selected = select_question(questions, question_id)
         if selected is None:
             raise ValueError("暂无可用科学问题。请先在 01 模块创建科学问题，或在 03 模块完成问题归纳。")
-        prompt = build_prompt(context=context, question=selected, route_count=route_count, emphasis=emphasis)
+        graph = load_knowledge_graph()
+        evidence_pool = collect_evidence_pool(context, selected)
+        prompt = build_prompt(
+            context=context,
+            question=selected,
+            route_count=route_count,
+            emphasis=emphasis,
+            evidence_pool=evidence_pool,
+            graph=graph,
+        )
         metadata: dict[str, Any] = {"mode": "fallback_no_api_key"}
         if self.settings is not None:
             try:
@@ -163,6 +192,14 @@ class RouteCandidateAgent:
                 metadata = {"mode": "fallback_llm_error", "error": str(exc)}
         else:
             routes = fallback_routes(context=context, question=selected, route_count=route_count, emphasis=emphasis)
+        routes = annotate_evidence(routes, evidence_pool)
+        routes = annotate_graph_novelty(routes, graph)
+        snapshot = {
+            "question": selected,
+            "evidence_pool": evidence_pool,
+            "graph": _graph_prompt_payload(graph, selected),
+            "emphasis": emphasis.strip(),
+        }
         run = {
             "id": utc_now_iso().replace(":", "").replace("+", "Z"),
             "created_at": utc_now_iso(),
@@ -174,14 +211,143 @@ class RouteCandidateAgent:
             "context_fingerprint": context_fingerprint(context),
             "model": self.model_name,
             "metadata": metadata,
+            "evidence_pool_size": len(evidence_pool),
+            "graph": graph_stats(graph),
+            "snapshot": snapshot,
             "routes": routes,
         }
+        if with_critique:
+            run = self._apply_critique(run, context)
+        self._save_runs([run] + [item for item in self._load_saved().get("runs", []) if item.get("id") != run["id"]])
+        return self.state(selected_question_id=int(selected["id"]))
+
+    def _apply_critique(self, run: dict[str, Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
+        """批判 + Elo Arena：独立证据检索 grounding（防幻觉传播），结果写回 routes 与 critique 块。
+
+        评判者不读取生成器选择的证据池与图倾向性摘要（这些只存于 snapshot 供审计）；
+        而是基于路线自身内容在 02 语料（Paper Cards / Wiki）上独立检索证据。
+        """
+        if not run.get("snapshot"):
+            run["snapshot"] = _rebuild_snapshot(run)
+        if context is None:
+            context = collect_context()
+        cards = list(context.get("paper_cards") or [])
+        wikis = list(context.get("wiki_pages") or [])
+        independent = {
+            route.get("rank"): independent_evidence_search(route, cards, wikis)
+            for route in run.get("routes") or []
+        }
+        critique = critique_routes(run, self.settings, independent)
+        arena = elo_arena(run, critique, self.settings, independent)
+        crit_by_rank = {item.get("rank"): item for item in critique.get("routes") or []}
+        elo_rank_by_route = {
+            item["rank"]: index + 1 for index, item in enumerate(arena.get("rankings") or [])
+        }
+        for route in run.get("routes") or []:
+            item = crit_by_rank.get(route.get("rank")) or {}
+            route["critique"] = {
+                "dimensions": item.get("dimensions") or {},
+                "total": item.get("total"),
+                "weaknesses": item.get("weaknesses") or [],
+                "improvements": item.get("improvements") or [],
+            }
+            route["elo_rating"] = (arena.get("ratings") or {}).get(str(route.get("rank")))
+            route["elo_rank"] = elo_rank_by_route.get(route.get("rank"))
+            search = independent.get(route.get("rank")) or {}
+            route["independent_verification"] = {
+                "queries": search.get("queries") or [],
+                "hit_count": len(search.get("hits") or []),
+                "hit_evidence_ids": search.get("hit_evidence_ids") or [],
+            }
+        run["critique"] = {
+            "mode": critique.get("mode"),
+            "error": critique.get("error"),
+            "created_at": utc_now_iso(),
+            "model": self.model_name if critique.get("mode") == "llm" else None,
+            "arena": arena,
+            "independent_search": {
+                "corpus_size": len(cards) + len(wikis),
+                "per_route": {
+                    str(rank): {
+                        "queries": (independent.get(rank) or {}).get("queries") or [],
+                        "hit_count": len((independent.get(rank) or {}).get("hits") or []),
+                    }
+                    for rank in independent
+                },
+            },
+        }
+        return run
+
+    def critique(self, *, run_id: str | None = None) -> dict[str, Any]:
+        """对已有 run 重新做批判评审（适用于旧 run 或手动触发）。"""
         saved = self._load_saved()
-        runs = [run] + [item for item in saved.get("runs", []) if item.get("id") != run["id"]]
+        run = _find_run(saved, run_id)
+        if run is None:
+            raise ValueError("还没有生成路线，请先点击“生成候选路线”。")
+        run = self._apply_critique(run)
+        self._save_runs([run] + [item for item in saved.get("runs", []) if item.get("id") != run["id"]])
+        return self.state(selected_question_id=run.get("question_id"))
+
+    def evolve(self, *, run_id: str | None = None) -> dict[str, Any]:
+        """一轮演化：基于批判意见生成 v2 路线，保留 lineage（parent → child）。"""
+        saved = self._load_saved()
+        run = _find_run(saved, run_id)
+        if run is None:
+            raise ValueError("还没有生成路线，请先点击“生成候选路线”。")
+        if not run.get("snapshot"):
+            run["snapshot"] = _rebuild_snapshot(run)
+        if not run.get("critique"):
+            run = self._apply_critique(run)
+        snapshot = run.get("snapshot") or {}
+        evidence_pool = list(snapshot.get("evidence_pool") or [])
+        graph = load_knowledge_graph()
+        metadata: dict[str, Any]
+        if self.settings is not None:
+            try:
+                payload = self.client_factory(self.settings).route_candidates(build_evolve_prompt(run))
+                routes = normalize_routes(payload.get("routes"), route_count=len(run.get("routes") or []))
+                if not routes:
+                    raise ValueError("演化输出无有效路线")
+                metadata = {"mode": "evolve_llm"}
+            except Exception as exc:
+                routes = fallback_evolve(run)
+                metadata = {"mode": "evolve_fallback_llm_error", "error": str(exc)[:300]}
+        else:
+            routes = fallback_evolve(run)
+            metadata = {"mode": "evolve_fallback"}
+        routes = annotate_evidence(routes, evidence_pool)
+        routes = annotate_graph_novelty(routes, graph)
+        new_run = {
+            "id": utc_now_iso().replace(":", "").replace("+", "Z"),
+            "created_at": utc_now_iso(),
+            "question_id": run.get("question_id"),
+            "question_title": run.get("question_title"),
+            "question_source": run.get("question_source"),
+            "route_count": len(routes),
+            "emphasis": run.get("emphasis", ""),
+            "context_fingerprint": run.get("context_fingerprint"),
+            "model": self.model_name,
+            "metadata": metadata,
+            "evidence_pool_size": len(evidence_pool),
+            "graph": graph_stats(graph),
+            "snapshot": snapshot,
+            "lineage": [
+                {
+                    "parent_run_id": run.get("id"),
+                    "parent_created_at": run.get("created_at"),
+                    "critique_mode": (run.get("critique") or {}).get("mode"),
+                }
+            ],
+            "routes": routes,
+        }
+        new_run = self._apply_critique(new_run)
+        self._save_runs([new_run] + [item for item in saved.get("runs", []) if item.get("id") != new_run["id"]])
+        return self.state(selected_question_id=new_run.get("question_id"))
+
+    def _save_runs(self, runs: list[dict[str, Any]]) -> None:
         saved = {"version": 1, "runs": runs[:20]}
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
         self.output_path.write_text(json.dumps(saved, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        return self.state(selected_question_id=int(selected["id"]))
 
     def _load_saved(self) -> dict[str, Any]:
         if not self.output_path.exists():
@@ -196,17 +362,51 @@ class RouteCandidateAgent:
         return {"version": 1, "runs": [item for item in runs if isinstance(item, dict)]}
 
 
+def _find_run(saved: dict[str, Any], run_id: str | None) -> dict[str, Any] | None:
+    runs = list(saved.get("runs") or [])
+    if run_id:
+        return next((item for item in runs if item.get("id") == run_id), None)
+    return runs[0] if runs else None
+
+
+def _rebuild_snapshot(run: dict[str, Any]) -> dict[str, Any]:
+    """旧 run 未保存快照时的重建：用当前上下文重建生成时近似快照（标记 rebuilt）。"""
+    context = collect_context()
+    selected = select_question(context.get("question_options", []), run.get("question_id")) or {}
+    graph = load_knowledge_graph()
+    return {
+        "question": selected,
+        "evidence_pool": collect_evidence_pool(context, selected),
+        "graph": _graph_prompt_payload(graph, selected),
+        "emphasis": str(run.get("emphasis") or ""),
+        "rebuilt": True,
+    }
+
+
 def collect_context() -> dict[str, Any]:
     question_context = _question_synthesis_context()
     retrieval_context = _retrieval_question_options()
-    question_options = merge_question_options(retrieval_context, question_context)
+    confirmed_options = _confirmed_question_options()
+    question_options = merge_question_options(retrieval_context, question_context, confirmed_options)
+    selected = select_question(question_options, None)
+    graph = load_knowledge_graph()
     context = {
         **question_context,
         "question_options": question_options,
+        "confirmed_questions": confirmed_options,
+        "graph": {
+            "stats": graph_stats(graph),
+            "context": graph_context(graph, selected or {}),
+            "gap_candidates": gap_candidates(graph),
+            "analogy_candidates": analogy_candidates(graph),
+            "constraints": constraint_list(graph),
+            "feasibility": feasibility_map(graph, selected or {}),
+        },
         "paths": {
             "route_output": str(default_output_path()),
             "retrieval_db": str(default_retrieval_agent_dir() / "data" / "literature.sqlite"),
             "question_synthesis": str(default_question_synthesis_agent_dir()),
+            "graph": str(default_graph_path()),
         },
     }
     return context
@@ -274,12 +474,62 @@ def _retrieval_question_options() -> list[dict[str, Any]]:
     return options
 
 
+def _confirmed_question_options() -> list[dict[str, Any]]:
+    """读取 03 模块确认过的结构化科学问题（question_synthesis.sqlite），
+    作为 04 的问题来源之一，且优先级最高。"""
+    db_path = default_question_synthesis_agent_dir() / "data" / "question_synthesis.sqlite"
+    if not db_path.exists():
+        return []
+    options: list[dict[str, Any]] = []
+    try:
+        with sqlite3.connect(db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            for row in conn.execute(
+                "SELECT * FROM confirmed_questions ORDER BY created_at DESC, id DESC LIMIT 20"
+            ):
+                options.append(
+                    {
+                        "id": 20000 + int(row["id"]),
+                        "source": "03 确认问题",
+                        "title": str(row["problem_statement"] or "").strip(),
+                        "description": str(row["mechanism_hypothesis"] or "").strip(),
+                        "variables": _json_list(row["variables_json"]),
+                        "validation_criteria": _json_list(row["validation_criteria_json"]),
+                        "evidence_ids": _json_list(row["evidence_ids_json"]),
+                        "confirmed_at": str(row["created_at"] or ""),
+                        "mode": str(row["mode"] or ""),
+                    }
+                )
+    except sqlite3.Error:
+        return options
+    return options
+
+
+def _json_list(value: Any) -> list[str]:
+    if not value:
+        return []
+    try:
+        data = json.loads(str(value))
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, list):
+        return []
+    return [str(item).strip() for item in data if str(item).strip()]
+
+
 def merge_question_options(
     retrieval_options: list[dict[str, Any]],
     context: dict[str, Any],
+    confirmed_options: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     options: list[dict[str, Any]] = []
     seen: set[str] = set()
+    # 03 模块确认的结构化问题优先级最高
+    for item in confirmed_options or []:
+        key = normalize_key(item.get("title"))
+        if key and key not in seen:
+            seen.add(key)
+            options.append(item)
     for item in retrieval_options:
         key = normalize_key(item.get("title"))
         if key and key not in seen:
@@ -325,7 +575,10 @@ def build_prompt(
     question: dict[str, Any],
     route_count: int,
     emphasis: str,
+    evidence_pool: list[str] | None = None,
+    graph: KnowledgeGraph | None = None,
 ) -> str:
+    graph_payload = _graph_prompt_payload(graph, question)
     payload = {
         "selected_question": question,
         "route_count": route_count,
@@ -336,14 +589,46 @@ def build_prompt(
         "candidate_papers": context.get("candidate_papers", [])[:8],
         "paper_cards": context.get("paper_cards", [])[:8],
         "wiki_pages": context.get("wiki_pages", [])[:12],
+        "evidence_pool": (evidence_pool or [])[:40],
+        "knowledge_graph": graph_payload,
     }
+    if question.get("source") == "03 确认问题":
+        payload["confirmed_question"] = {
+            "variables": question.get("variables"),
+            "validation_criteria": question.get("validation_criteria"),
+            "evidence_ids": question.get("evidence_ids"),
+        }
     return (
         f"请为所选科学问题生成 {route_count} 条互相区分的可行研究路线。\n"
         "每条路线 JSON 字段必须为：title, rationale, candidates, variables, validation, evidence, risks, priority, next_step。\n"
         "candidates、variables、validation、evidence、risks 必须是字符串数组；priority 是 高/中/低之一。\n"
+        "evidence 字段中尽量直接引用 evidence_pool 里的 evidence id，无法引用时明确写成推测。\n"
+        "knowledge_graph 中的 gap_candidates（方法尚未用于某材料的组合）是候选新颖方向的线索，可以优先考虑；"
+        "constraints 是已知限制，路线设计应避免与限制冲突。\n"
         "上下文 JSON：\n"
         + json.dumps(payload, ensure_ascii=False, indent=2)
     )
+
+
+def _graph_prompt_payload(graph: KnowledgeGraph | None, question: dict[str, Any]) -> dict[str, Any]:
+    if graph is None or graph.is_empty():
+        return {"loaded": False}
+    graph_ctx = graph_context(graph, question)
+    gaps = gap_candidates(graph)
+    analogies = analogy_candidates(graph)
+    constraints = constraint_list(graph)
+    return {
+        "loaded": True,
+        "matched_entities": graph_ctx.get("matched_entities", []),
+        "related_nodes": [
+            {"id": item.get("id"), "type": item.get("type"), "label": item.get("label")}
+            for item in graph_ctx.get("nodes", [])[:24]
+        ],
+        "related_evidence_ids": graph_ctx.get("evidence_ids", [])[:20],
+        "gap_candidates": gaps[:8],
+        "analogy_candidates": analogies[:6],
+        "constraints": [item.get("limitation") for item in constraints[:8]],
+    }
 
 
 def normalize_routes(value: Any, *, route_count: int) -> list[dict[str, Any]]:
@@ -470,6 +755,56 @@ def string_list(value: Any) -> list[str]:
     if value is None:
         return []
     return [str(value).strip()] if str(value).strip() else []
+
+
+def collect_evidence_pool(context: dict[str, Any], question: dict[str, Any]) -> list[str]:
+    """收集可追溯证据 id 池：确认问题自带的证据优先，再补 Paper Cards / Wiki 的证据。"""
+    ids: list[str] = []
+    for item in list(question.get("evidence_ids") or []):
+        text = str(item).strip()
+        if text and text not in ids:
+            ids.append(text)
+    for card in context.get("paper_cards") or []:
+        for item in list(card.get("evidence_ids") or []):
+            text = str(item).strip()
+            if text and text not in ids:
+                ids.append(text)
+    for page in context.get("wiki_pages") or []:
+        for item in list(page.get("evidence_ids") or []):
+            text = str(item).strip()
+            if text and text not in ids:
+                ids.append(text)
+        for finding in list(page.get("known_findings") or []):
+            for item in list(finding.get("evidence_ids") or []):
+                text = str(item).strip()
+                if text and text not in ids:
+                    ids.append(text)
+    return ids
+
+
+def annotate_evidence(routes: list[dict[str, Any]], evidence_pool: list[str]) -> list[dict[str, Any]]:
+    """对每条路线的 evidence 文本做确定性标注：引用了真实证据 id → 证据支撑；否则 → 推测。"""
+    pool = [text for text in evidence_pool if text]
+    for route in routes:
+        annotations = []
+        for text in route.get("evidence") or []:
+            matched = [eid for eid in pool if eid in text]
+            annotations.append(
+                {
+                    "text": text,
+                    "kind": "证据支撑" if matched else "推测",
+                    "matched_ids": matched,
+                }
+            )
+        route["evidence_annotations"] = annotations
+    return routes
+
+
+def annotate_graph_novelty(routes: list[dict[str, Any]], graph: KnowledgeGraph | None) -> list[dict[str, Any]]:
+    """对每条路线附加确定性图新颖性评分（高/中/低 + 理由）。"""
+    for route in routes:
+        route["graph_novelty"] = graph_novelty(graph, route)
+    return routes
 
 
 def normalize_priority(value: Any, index: int) -> str:

@@ -41,6 +41,20 @@ class QuestionSynthesisDB:
                 created_at TEXT NOT NULL,
                 FOREIGN KEY(session_id) REFERENCES sessions(id)
             );
+
+            CREATE TABLE IF NOT EXISTS confirmed_questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id INTEGER NOT NULL,
+                problem_statement TEXT NOT NULL,
+                variables_json TEXT NOT NULL,
+                mechanism_hypothesis TEXT NOT NULL,
+                validation_criteria_json TEXT NOT NULL,
+                evidence_ids_json TEXT NOT NULL,
+                source_message_id INTEGER,
+                mode TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(session_id) REFERENCES sessions(id)
+            );
             """
         )
         self.conn.commit()
@@ -112,6 +126,75 @@ class QuestionSynthesisDB:
         session = self.get_session(session_key)
         if session is not None:
             self.clear_messages(int(session["id"]))
+
+    def add_confirmed_question(
+        self,
+        *,
+        session_id: int,
+        problem_statement: str,
+        variables: list[str],
+        mechanism_hypothesis: str,
+        validation_criteria: list[str],
+        evidence_ids: list[str],
+        source_message_id: int | None = None,
+        mode: str = "llm",
+    ) -> int:
+        cur = self.conn.execute(
+            """
+            INSERT INTO confirmed_questions(
+                session_id, problem_statement, variables_json, mechanism_hypothesis,
+                validation_criteria_json, evidence_ids_json, source_message_id, mode, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                session_id,
+                problem_statement,
+                json.dumps(variables, ensure_ascii=False),
+                mechanism_hypothesis,
+                json.dumps(validation_criteria, ensure_ascii=False),
+                json.dumps(evidence_ids, ensure_ascii=False),
+                source_message_id,
+                mode,
+                utc_now_iso(),
+            ),
+        )
+        self.conn.execute("UPDATE sessions SET updated_at = ? WHERE id = ?", (utc_now_iso(), session_id))
+        self.conn.commit()
+        return int(cur.lastrowid)
+
+    def confirmed_questions(self, session_key: str = "latest") -> list[sqlite3.Row]:
+        session = self.get_session(session_key)
+        if session is None:
+            return []
+        return list(
+            self.conn.execute(
+                "SELECT * FROM confirmed_questions WHERE session_id = ? ORDER BY id DESC",
+                (int(session["id"]),),
+            )
+        )
+
+    def human_intervention_count(self, session_id: int) -> int:
+        row = self.conn.execute(
+            "SELECT COUNT(*) AS n FROM messages WHERE session_id = ? AND role = 'user'",
+            (session_id,),
+        ).fetchone()
+        return int(row["n"] or 0)
+
+
+def confirmed_question_to_dict(row: sqlite3.Row) -> dict[str, Any]:
+    data = dict(row)
+    for key, default in (
+        ("variables_json", []),
+        ("validation_criteria_json", []),
+        ("evidence_ids_json", []),
+    ):
+        if key in data:
+            try:
+                data[key.removesuffix("_json")] = json.loads(data.pop(key) or "[]")
+            except json.JSONDecodeError:
+                data[key.removesuffix("_json")] = default
+    return data
 
 
 def row_to_dict(row: sqlite3.Row) -> dict[str, Any]:

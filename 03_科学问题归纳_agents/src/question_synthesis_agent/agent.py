@@ -4,7 +4,7 @@ import json
 from typing import Any, Callable
 
 from .context import collect_context
-from .db import QuestionSynthesisDB, row_to_dict
+from .db import QuestionSynthesisDB, confirmed_question_to_dict, row_to_dict
 from .llm import LLMSettings, OpenAICompatibleChatClient
 
 
@@ -18,6 +18,17 @@ SYSTEM_PROMPT = """你是 AI Scientist 工作流第 3 模块的“科学问题�
 - 问题2
 - 问题3
 这 3 个问题要是你认为最有助于细化研究方向的下一步追问。"""
+
+
+CONFIRM_SYSTEM_PROMPT = """你是 AI Scientist 工作流第 3 模块的“科学问题确认器”。
+研究者已经就某个科学问题完成了讨论，现在要把收敛结果结构化保存，供第 4 模块生成研究路线使用。
+请基于给定的上下文 JSON 和对话记录，输出严格 JSON，字段必须为：
+- problem_statement: 一句话问题陈述（“在 X 体系中，研究 Y 如何通过 Z 影响 W”）
+- variables: 关键变量数组（材料/结构/工艺变量）
+- mechanism_hypothesis: 机制假设（因果链描述，尚无证据也要写清“待验证”字样）
+- validation_criteria: 验证判据数组（用什么计算/实验指标判断假设成立）
+- evidence_ids: 证据 id 数组，只能从上下文提供的 evidence_ids 池中选择，找不到就写 []
+不要编造文献、DOI、实验结果或池中不存在的 evidence id。"""
 
 
 _UNSET = object()
@@ -40,9 +51,12 @@ class QuestionSynthesisAgent:
         session_id = self.ensure_initialized(context=context, session_key=session_key)
         session = self.db.get_session(session_key)
         messages = [row_to_dict(row) for row in self.db.messages(session_id)]
+        confirmed = [confirmed_question_to_dict(row) for row in self.db.confirmed_questions(session_key)]
         return {
             "session": dict(session) if session is not None else None,
             "messages": messages,
+            "confirmed_questions": confirmed,
+            "interventions": {"human_messages": self.db.human_intervention_count(session_id)},
             "context": context,
             "model_name": self.model_name,
             "llm_configured": self.settings is not None,
@@ -76,6 +90,60 @@ class QuestionSynthesisAgent:
     def reset(self, *, session_key: str = "latest") -> dict[str, Any]:
         self.db.reset(session_key)
         return self.state(session_key=session_key)
+
+    def confirm(self, *, session_key: str = "latest") -> dict[str, Any]:
+        """把当前对话收敛结果结构化为一条确认的科学问题，存入 confirmed_questions。"""
+        context = collect_context()
+        session_id = self.ensure_initialized(context=context, session_key=session_key)
+        messages = [row_to_dict(row) for row in self.db.messages(session_id)]
+        anchor = _latest_human_message(messages)
+        if anchor is None:
+            raise ValueError("暂无可确认内容：请先输入你想确认的科学问题或方向。")
+        evidence_pool = collect_evidence_ids(context)
+        if self.settings is not None:
+            try:
+                structured, mode = self._confirm_via_llm(context, messages, evidence_pool), "llm"
+            except Exception as exc:
+                structured, mode = _fallback_confirm(context, anchor, evidence_pool), "fallback_llm_error"
+        else:
+            structured, mode = _fallback_confirm(context, anchor, evidence_pool), "fallback_no_api_key"
+        structured["evidence_ids"] = _filter_evidence_ids(structured.get("evidence_ids"), evidence_pool)
+        question_id = self.db.add_confirmed_question(
+            session_id=session_id,
+            problem_statement=structured["problem_statement"],
+            variables=structured["variables"],
+            mechanism_hypothesis=structured["mechanism_hypothesis"],
+            validation_criteria=structured["validation_criteria"],
+            evidence_ids=structured["evidence_ids"],
+            source_message_id=int(anchor["id"]) if anchor.get("id") is not None else None,
+            mode=mode,
+        )
+        self.db.add_message(
+            session_id=session_id,
+            role="confirm",
+            speaker="科学问题确认器",
+            content=_confirm_summary(structured),
+            model=self.model_name,
+            metadata={"source": "confirm_action", "confirmed_question_id": question_id, "mode": mode},
+        )
+        return self.state(session_key=session_key)
+
+    def _confirm_via_llm(
+        self,
+        context: dict[str, Any],
+        messages: list[dict[str, Any]],
+        evidence_pool: list[str],
+    ) -> dict[str, Any]:
+        assert self.settings is not None
+        prompt = (
+            "请把对话中最新确认的研究方向结构化为可进入路线设计的科学问题。\n"
+            f"证据 id 池：{json.dumps(evidence_pool, ensure_ascii=False)}\n"
+            f"最近对话（新→旧，最多 10 条）：\n"
+            + _recent_messages_text(messages)
+            + "\n输出严格 JSON，不要包含解释文字。"
+        )
+        content = self.client_factory(self.settings).chat(system_prompt=CONFIRM_SYSTEM_PROMPT, messages=[{"role": "user", "content": prompt}])
+        return parse_confirm_json(content, context, messages)
 
     def ensure_initialized(self, *, context: dict[str, Any], session_key: str = "latest") -> int:
         title = _session_title(context)
@@ -323,3 +391,132 @@ def _unique(items: Any) -> list[str]:
         if text and text not in values:
             values.append(text)
     return values
+
+
+def _latest_human_message(messages: list[dict[str, Any]]) -> dict[str, Any] | None:
+    for item in reversed(messages):
+        if item.get("role") == "user":
+            return item
+    return None
+
+
+def collect_evidence_ids(context: dict[str, Any]) -> list[str]:
+    """从 Paper Cards / Wiki 中收集全部可追溯证据 id，作为确认动作的证据池。"""
+    ids: list[str] = []
+    for card in context.get("paper_cards") or []:
+        for item in list(card.get("evidence_ids") or []):
+            if item and item not in ids:
+                ids.append(item)
+        for claim in list(card.get("claims") or []):
+            for item in list(claim.get("evidence_ids") or []):
+                if item and item not in ids:
+                    ids.append(item)
+    for page in context.get("wiki_pages") or []:
+        for item in list(page.get("evidence_ids") or []):
+            if item and item not in ids:
+                ids.append(item)
+        for finding in list(page.get("known_findings") or []):
+            for item in list(finding.get("evidence_ids") or []):
+                if item and item not in ids:
+                    ids.append(item)
+    return ids
+
+
+def parse_confirm_json(content: str, context: dict[str, Any], messages: list[dict[str, Any]]) -> dict[str, Any]:
+    anchor = _latest_human_message(messages)
+    data = _extract_json_object(content)
+    if not data:
+        raise ValueError(f"确认器未返回有效 JSON：{str(content)[:200]}")
+    evidence_pool = collect_evidence_ids(context)
+    return _fallback_confirm(context, anchor, evidence_pool) if not isinstance(data, dict) else {
+        "problem_statement": str(data.get("problem_statement") or "").strip(),
+        "variables": _string_list(data.get("variables")),
+        "mechanism_hypothesis": str(data.get("mechanism_hypothesis") or "").strip(),
+        "validation_criteria": _string_list(data.get("validation_criteria")),
+        "evidence_ids": _filter_evidence_ids(data.get("evidence_ids"), evidence_pool),
+    }
+
+
+def _extract_json_object(content: str) -> dict[str, Any] | None:
+    text = (content or "").strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        lines = [line for line in lines if not line.strip().startswith("```")]
+        text = "\n".join(lines).strip()
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start < 0 or end <= start:
+            return None
+        try:
+            data = json.loads(text[start : end + 1])
+        except json.JSONDecodeError:
+            return None
+    return data if isinstance(data, dict) else None
+
+
+def _fallback_confirm(
+    context: dict[str, Any],
+    anchor: dict[str, Any] | None,
+    evidence_pool: list[str],
+) -> dict[str, Any]:
+    cards = context.get("paper_cards") or []
+    wikis = context.get("wiki_pages") or []
+    materials = _unique(item for card in cards for item in list(card.get("materials") or []))[:5]
+    properties = _unique(item for card in cards for item in list(card.get("properties") or []))[:5]
+    open_questions = _unique(item for page in wikis for item in list(page.get("open_questions") or []))[:3]
+    statement = str((anchor or {}).get("content") or "").strip()[:200] or (
+        open_questions[0] if open_questions else "基于当前文献证据收敛出的核心科学问题"
+    )
+    return {
+        "problem_statement": statement,
+        "variables": materials or ["待确认的材料/结构变量"],
+        "mechanism_hypothesis": "待验证：关键结构/成分变量通过尚不明确的机制影响目标性能。",
+        "validation_criteria": (
+            ["用计算或实验手段验证变量-机制-性能因果链"] + ([f"目标指标：{', '.join(properties)}"] if properties else [])
+        ),
+        "evidence_ids": evidence_pool[:8],
+    }
+
+
+def _filter_evidence_ids(value: Any, evidence_pool: list[str]) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    pool = {str(item).strip() for item in evidence_pool}
+    filtered: list[str] = []
+    for item in value:
+        text = str(item).strip()
+        if text in pool and text not in filtered:
+            filtered.append(text)
+    return filtered
+
+
+def _recent_messages_text(messages: list[dict[str, Any]]) -> str:
+    lines: list[str] = []
+    for item in list(messages)[-10:]:
+        speaker = item.get("speaker") or item.get("role")
+        lines.append(f"[{speaker}] {item.get('content')}")
+    return "\n".join(lines)
+
+
+def _confirm_summary(structured: dict[str, Any]) -> str:
+    lines = [
+        "已确认科学问题（结构化保存）：",
+        f"- 问题陈述：{structured['problem_statement']}",
+        f"- 关键变量：{', '.join(structured['variables']) or '待补充'}",
+        f"- 机制假设：{structured['mechanism_hypothesis']}",
+        f"- 验证判据：{'; '.join(structured['validation_criteria']) or '待补充'}",
+        f"- 证据：{', '.join(structured['evidence_ids']) or '无可追溯证据，标记为待补充'}",
+    ]
+    return "\n".join(lines)
+
+
+def _string_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()][:8]
+    if value is None:
+        return []
+    text = str(value).strip()
+    return [text] if text else []

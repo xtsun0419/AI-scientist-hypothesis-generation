@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "idea_pack.schema.json",
+  "title": "IdeaPack",
+  "description": "Proposal-level research package. READY_FOR_CHEAP_TEST does not mean the cheap test has been run.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "idea_id",
+    "status",
+    "opportunity",
+    "core_hypothesis",
+    "why_now",
+    "proposed_mechanism",
+    "source_of_gain",
+    "strongest_baseline",
+    "kill_condition",
+    "main_uncertainty",
+    "expected_reviewer_2_objection",
+    "response_to_objection",
+    "evidence_that_would_make_reviewer_correct"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "idea_factory.idea_pack.v1"
+    },
+    "idea_id": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": [
+        "READY_FOR_CHEAP_TEST",
+        "HOLD",
+        "KILLED_QUALITY",
+        "KILLED_INTERNAL_DUP",
+        "KILLED_RECON",
+        "KILLED_REVIEW"
+      ]
+    },
+    "opportunity": { "type": "string" },
+    "core_hypothesis": { "type": "string" },
+    "why_now": { "type": "string" },
+    "supporting_observations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "inference_flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "nearest_priors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "paper",
+          "exact_overlap",
+          "residual_difference",
+          "evidence_url_or_id"
+        ],
+        "properties": {
+          "paper": { "type": "string" },
+          "exact_overlap": { "type": "string" },
+          "residual_difference": { "type": "string" },
+          "evidence_url_or_id": { "type": "string" }
+        }
+      }
+    },
+    "proposed_mechanism": { "type": "string" },
+    "source_of_gain": { "type": "string" },
+    "cheapest_decisive_test": {
+      "type": ["object", "null"],
+      "properties": {
+        "setup": { "type": "string" },
+        "discriminates_against": { "type": "string" },
+        "expected_runtime_or_cost": { "type": "string" }
+      }
+    },
+    "strongest_baseline": { "type": "string" },
+    "kill_condition": { "type": "string" },
+    "main_uncertainty": { "type": "string" },
+    "expected_reviewer_2_objection": { "type": "string" },
+    "response_to_objection": { "type": "string" },
+    "evidence_that_would_make_reviewer_correct": { "type": "string" },
+    "human_scores": { "type": ["object", "null"] },
+    "human_reason_codes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": { "type": "string" }
+  }
+}

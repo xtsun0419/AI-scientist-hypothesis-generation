@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "opportunity.schema.json",
+  "title": "Opportunity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "opportunity_id",
+    "operator",
+    "assumption_x",
+    "observation_y",
+    "condition_z",
+    "failure_f",
+    "missing_capability_w",
+    "alternative_explanation_a",
+    "decisive_experiment",
+    "supporting_card_ids",
+    "nearest_internal_neighbors",
+    "scope_compatibility"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "idea_factory.opportunity.v1"
+    },
+    "opportunity_id": { "type": "string", "minLength": 1 },
+    "operator": {
+      "type": "string",
+      "enum": [
+        "ASSUMPTION_BREAK",
+        "FAILURE_TRANSFER",
+        "BOUNDARY_CONDITION",
+        "MEASUREMENT_GAP",
+        "EVALUATION_MISMATCH",
+        "OBJECTIVE_CONFLICT",
+        "DYNAMIC_MISMATCH",
+        "MECHANISM_TRANSPLANT"
+      ]
+    },
+    "assumption_x": { "type": "string" },
+    "observation_y": { "type": "string" },
+    "condition_z": { "type": "string" },
+    "failure_f": { "type": "string" },
+    "missing_capability_w": { "type": "string" },
+    "alternative_explanation_a": { "type": "string" },
+    "decisive_experiment": { "type": "string" },
+    "supporting_card_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "nearest_internal_neighbors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "scope_compatibility": { "type": "string" },
+    "inference_flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": "idea_factory.idea_pack.v1",
+  "idea_id": "idea_pack-synthetic-demo-0001",
+  "status": "HOLD",
+  "opportunity": "opp-synthetic-demo-0001",
+  "core_hypothesis": "If long-running serving traces drop previously useful cached state, retrieval quality degrades unless eviction is treated as a first-class control signal.",
+  "why_now": "Supporting notes report retrieval degradation after eviction under long serving traces.",
+  "supporting_observations": [
+    "Retrieval quality drops after forced cache eviction on long traces.",
+    "Existing cards assume cache residency without measuring eviction effects."
+  ],
+  "inference_flags": [
+    "SYNTHETIC_SAMPLE"
+  ],
+  "nearest_priors": [
+    {
+      "paper": "PRIOR-PAPER-A (placeholder)",
+      "exact_overlap": "Studies cache reuse for long-context serving.",
+      "residual_difference": "Does not treat eviction as a controllable failure mechanism with a decisive recall comparison.",
+      "evidence_url_or_id": "placeholder:prior-paper-a"
+    }
+  ],
+  "proposed_mechanism": "Eviction-aware retrieval control that conditions lookup on residency state.",
+  "source_of_gain": "Separates eviction-induced failure from routing error under a forced-eviction comparison.",
+  "cheapest_decisive_test": {
+    "setup": "Compare recall before vs after forced cache eviction on the same long-trace workload.",
+    "discriminates_against": "cache eviction, not routing error",
+    "expected_runtime_or_cost": "single ablated replay on a fixed trace suite; minutes to hours"
+  },
+  "strongest_baseline": "Unmodified cache-reuse serving stack without eviction control",
+  "kill_condition": "Forced eviction does not change recall relative to the no-eviction control under the same routing policy.",
+  "main_uncertainty": "Observed degradation may still be explained by routing error rather than eviction.",
+  "expected_reviewer_2_objection": "This is A+B: ordinary cache reuse plus a trivial eviction flag.",
+  "response_to_objection": "The claim is not 'add a flag'; it is that eviction is the causal failure mode and must be discriminated by a decisive recall comparison.",
+  "evidence_that_would_make_reviewer_correct": "If forced eviction leaves recall unchanged while routing ablations explain the drop, the eviction hypothesis is wrong.",
+  "human_scores": null,
+  "human_reason_codes": [],
+  "notes": "Fully synthetic sample for schema illustration. Not from a live pilot corpus. Cheap decisive experiments have not been run. Not a scientific claim."
+}

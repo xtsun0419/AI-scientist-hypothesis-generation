@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "research_opportunity_sidecar.schema.json",
+  "title": "ResearchOpportunitySidecar",
+  "description": "Additive failure-aware overlay for host Paper Cards. Does not replace existing card fields.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "card_id",
+    "assumption",
+    "failure_observation",
+    "failure_mechanism",
+    "evaluation_regime",
+    "scope",
+    "evidence_pointers"
+  ],
+  "properties": {
+    "card_id": { "type": "string", "minLength": 1 },
+    "assumption": { "type": "string" },
+    "failure_observation": { "type": "string" },
+    "failure_mechanism": { "type": "string" },
+    "evaluation_regime": { "type": "string" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["object", "time_horizon", "setting"],
+      "properties": {
+        "object": { "type": "string" },
+        "time_horizon": { "type": "string" },
+        "setting": { "type": "string" }
+      }
+    },
+    "evidence_pointers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "locator", "supports"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": ["NOTE", "PDF", "TABLE", "FIGURE", "EXPERIMENT"]
+          },
+          "locator": { "type": "string", "minLength": 1 },
+          "supports": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

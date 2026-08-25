@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quality_decision.schema.json",
+  "title": "QualityDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["opportunity_id", "passed", "reason_codes"],
+  "properties": {
+    "opportunity_id": { "type": "string", "minLength": 1 },
+    "passed": { "type": "boolean" },
+    "reason_codes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

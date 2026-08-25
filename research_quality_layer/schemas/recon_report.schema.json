@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "recon_report.schema.json",
+  "title": "ReconReport",
+  "description": "Bounded prior-art recon report. NO_DIRECT_COVERAGE_FOUND is not a global novelty claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "opportunity_id",
+    "searched_query_ids",
+    "searched_at",
+    "nearest_priors",
+    "decision",
+    "decision_reason"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "idea_factory.recon.v1"
+    },
+    "opportunity_id": { "type": "string", "minLength": 1 },
+    "searched_query_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "searched_at": { "type": "string", "format": "date-time" },
+    "nearest_priors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "paper",
+          "exact_overlap",
+          "residual_difference",
+          "evidence_url_or_id"
+        ],
+        "properties": {
+          "paper": { "type": "string", "minLength": 1 },
+          "exact_overlap": { "type": "string", "minLength": 1 },
+          "residual_difference": { "type": "string", "minLength": 1 },
+          "evidence_url_or_id": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "COVERED",
+        "NEAR_PRIOR_WITH_RESIDUAL",
+        "NO_DIRECT_COVERAGE_FOUND"
+      ]
+    },
+    "decision_reason": { "type": "string" }
+  }
+}

@@ -1,0 +1,13 @@
+research_quality_layer
+Copyright notice for ported components
+
+This directory contains code and schemas derived from:
+  Research Opportunity Factory
+  https://github.com/Nathan10969/Research-Opportunity-Factory
+
+Those derived portions are licensed under the Apache License, Version 2.0.
+See LICENSE-APACHE-2.0.txt and ATTRIBUTION.md in this directory.
+
+The parent repository (AI-scientist-hypothesis-generation) remains under its
+own MIT license. Consumers of this sidecar must retain the Apache-2.0 notices
+for the ported components.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import sys
 import urllib.error
@@ -63,6 +64,42 @@ class LLMSettings:
         return cls(base_url=base_url.rstrip("/"), api_key=api_key, model=model)
 
 
+def _message_text(raw: dict[str, Any]) -> Any:
+    """提取回复文本；兼容推理模型（content 为空时回退 reasoning_content）。"""
+    message = raw.get("choices", [{}])[0].get("message", {}) or {}
+    content = message.get("content")
+    if isinstance(content, list):
+        content = "".join(str(item.get("text") or item) for item in content)
+    if isinstance(content, str) and content.strip():
+        return content
+    fallback = message.get("reasoning_content")
+    if isinstance(fallback, str) and fallback.strip():
+        return fallback
+    return content if content is not None else ""
+
+
+def _loads_json(text: Any) -> Any:
+    """严格解析失败时，从文本（代码块/推理内容）中提取 JSON 对象。"""
+    if isinstance(text, (dict, list)):
+        return text
+    source = str(text)
+    try:
+        return json.loads(source)
+    except json.JSONDecodeError:
+        pass
+    decoder = json.JSONDecoder()
+    candidates: list[Any] = []
+    for match in re.finditer(r"\{", source):
+        try:
+            obj, _ = decoder.raw_decode(source, match.start())
+        except json.JSONDecodeError:
+            continue
+        candidates.append(obj)
+    if candidates:
+        return candidates[-1]
+    raise ValueError("no JSON object found")
+
+
 class OpenAICompatibleJsonClient:
     def __init__(self, settings: LLMSettings, *, timeout_seconds: int = 90):
         self.settings = settings
@@ -96,12 +133,12 @@ class OpenAICompatibleJsonClient:
                 raw = json.loads(response.read().decode("utf-8"))
         except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise RuntimeError(f"LLM request failed: {exc}") from exc
-        content = raw.get("choices", [{}])[0].get("message", {}).get("content", "")
+        content = _message_text(raw)
         if isinstance(content, dict):
             return content
         try:
-            return json.loads(str(content))
-        except json.JSONDecodeError as exc:
+            return _loads_json(content)
+        except ValueError as exc:
             raise ValueError(f"LLM returned invalid JSON: {str(content)[:200]}") from exc
 
 

@@ -56,7 +56,11 @@ class OpenAICompatibleChatClient:
         content: Any = raw.get("choices", [{}])[0].get("message", {}).get("content", "")
         if isinstance(content, list):
             return "\n".join(str(item.get("text") or item) for item in content)
-        return str(content).strip()
+        if isinstance(content, str) and content.strip():
+            return content.strip()
+        # 兼容推理模型：content 为空时回退 reasoning_content
+        fallback = raw.get("choices", [{}])[0].get("message", {}).get("reasoning_content", "")
+        return str(fallback).strip()
 
 
 def _ssl_context() -> ssl.SSLContext | None:

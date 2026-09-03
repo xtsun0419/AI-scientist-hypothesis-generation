@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import json
+import re
 import urllib.error
 import urllib.request
 from typing import Any
@@ -36,6 +37,42 @@ DIMENSION_LABELS = {
     "evidence": "证据充分性",
     "falsifiability": "可证伪性",
 }
+
+
+def _message_text(raw: dict[str, Any]) -> Any:
+    """提取回复文本；兼容推理模型（content 为空时回退 reasoning_content）。"""
+    message = raw.get("choices", [{}])[0].get("message", {}) or {}
+    content = message.get("content")
+    if isinstance(content, list):
+        content = "".join(str(item.get("text") or item) for item in content)
+    if isinstance(content, str) and content.strip():
+        return content
+    fallback = message.get("reasoning_content")
+    if isinstance(fallback, str) and fallback.strip():
+        return fallback
+    return content if content is not None else ""
+
+
+def _loads_json(text: Any) -> Any:
+    """严格解析失败时，从文本（代码块/推理内容）中提取 JSON 对象。"""
+    if isinstance(text, (dict, list)):
+        return text
+    source = str(text)
+    try:
+        return json.loads(source)
+    except json.JSONDecodeError:
+        pass
+    decoder = json.JSONDecoder()
+    candidates: list[Any] = []
+    for match in re.finditer(r"\{", source):
+        try:
+            obj, _ = decoder.raw_decode(source, match.start())
+        except json.JSONDecodeError:
+            continue
+        candidates.append(obj)
+    if candidates:
+        return candidates[-1]
+    raise ValueError("no JSON object found")
 
 
 def _llm_json(settings: Any, *, system_prompt: str, user_prompt: str, timeout_seconds: int = 120) -> dict[str, Any]:
@@ -67,12 +104,12 @@ def _llm_json(settings: Any, *, system_prompt: str, user_prompt: str, timeout_se
             raw = json.loads(response.read().decode("utf-8"))
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
         raise RuntimeError(f"LLM request failed: {exc}") from exc
-    content = raw.get("choices", [{}])[0].get("message", {}).get("content", "")
+    content = _message_text(raw)
     if isinstance(content, dict):
         return content
     try:
-        return json.loads(str(content))
-    except json.JSONDecodeError as exc:
+        return _loads_json(content)
+    except ValueError as exc:
         raise ValueError(f"LLM returned invalid JSON: {str(content)[:200]}") from exc
 
 
@@ -133,6 +170,38 @@ def _snapshot_text(run: dict[str, Any]) -> str:
     if snapshot.get("emphasis"):
         parts.append(f"【研究者偏好】{snapshot.get('emphasis')}")
     return "\n\n".join(parts)
+
+
+_LATIN_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9\-\u2080-\u2089]{2,}")
+_CHUNK_SPLIT_RE = re.compile(r'[，。、；：:（）()\[\]“”"\'\s,;\n\t]+')
+_LATIN_STOPWORDS = {"the", "and", "for", "with", "not"}
+
+
+def _item_atoms(text: str) -> tuple[list[str], list[str]]:
+    """把一条查询文本拆为检索原子：(英文/材料 token, 中文 n-gram)。"""
+    latin: list[str] = []
+    for match in _LATIN_TOKEN_RE.finditer(text):
+        token = match.group(0)
+        if token.lower() not in _LATIN_STOPWORDS and token not in latin:
+            latin.append(token)
+    grams: list[str] = []
+    for chunk in _CHUNK_SPLIT_RE.split(text):
+        chunk = chunk.strip()
+        if len(chunk) == 2:
+            grams.append(chunk)
+        elif len(chunk) >= 3:
+            grams.extend(chunk[i : i + 3] for i in range(len(chunk) - 2))
+    return latin, grams
+
+
+def _item_matches(text: str, latin: list[str], grams: list[str]) -> bool:
+    """一条查询是否命中文档：英文 token 任一命中（忽略连字符差异），
+    或中文 n-gram 命中 ≥ 2。"""
+    normalized = text.replace("-", "").replace("–", "").replace("—", "")
+    if any(token.replace("-", "").replace("–", "").replace("—", "") in normalized for token in latin):
+        return True
+    hits = sum(1 for gram in grams if gram in text)
+    return hits >= 2
 
 
 def _route_query_terms(route: dict[str, Any]) -> list[str]:
@@ -200,8 +269,13 @@ def independent_evidence_search(route: dict[str, Any], cards: list[Any], wikis: 
             }
         )
     hits: list[dict[str, Any]] = []
+    atoms = [_item_atoms(query) for query in queries]
     for doc in docs:
-        matched = [q for q in queries if q and q in doc["text"]]
+        matched = [
+            query
+            for query, (latin, grams) in zip(queries, atoms)
+            if _item_matches(doc["text"], latin, grams)
+        ]
         if not matched:
             continue
         ids = [item for item in doc["evidence_ids"] if item]

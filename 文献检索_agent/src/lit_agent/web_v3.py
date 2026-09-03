@@ -1377,7 +1377,7 @@ def render_paper_analysis(*, message: str | None = None, error: str | None = Non
         <div class="panel-head"><h2>检索证据</h2></div>
         <form method="get" action="/paper-analysis">
           <label>关键词</label>
-          <input name="q" value="{html.escape(query)}" placeholder="coercivity / NdFeB / micromagnetic">
+          <input name="q" value="{html.escape(query)}" placeholder="研究对象 / 方法 / 指标">
           <button type="submit">RAG 搜索</button>
         </form>
         <p class="subtle">检索 paragraph、section、caption、table、reference；有本地向量索引时使用 hybrid rank。</p>
@@ -2257,7 +2257,7 @@ def render_home(*, message: str | None = None, error: str | None = None) -> str:
     {notice(error, "err") if error else ""}
     <section class="full hero-strip">
       <div>
-        <div class="brand-kicker">Permanent Magnet Literature Agent</div>
+        <div class="brand-kicker">General Research Literature Agent</div>
         <h2>{html.escape(str(latest_goal["title"])) if latest_goal else "尚未创建科学问题"}</h2>
         <p class="subtle">小批量候选、人工确认、开放 PDF 获取、手动 DOI 清单、分析综合与下一轮检索建议。</p>
       </div>
@@ -2281,9 +2281,9 @@ def render_home(*, message: str | None = None, error: str | None = None) -> str:
         <div class="panel-head"><h2>创建科学问题</h2></div>
         <form method="post" action="/goal/create">
           <label>科学问题</label>
-          <input name="title" required placeholder="例如：NdFeB grain boundary diffusion for high coercivity">
+          <input name="title" required placeholder="例如：某研究对象在特定条件下的机制与验证问题">
           <label>补充说明</label>
-          <textarea name="description" placeholder="材料体系、性能目标、排除范围等"></textarea>
+          <textarea name="description" placeholder="研究对象、关键变量、目标指标、排除范围等"></textarea>
           <label>每轮目标文献数</label>
           <input name="target_count" type="number" value="20" min="1" max="100">
           <button type="submit">创建科学问题</button>
@@ -2651,7 +2651,7 @@ def rag_results_block(state: dict[str, Any]) -> str:
     query = str(state.get("query") or "").strip()
     rows = state.get("rag_results", [])
     if not query:
-        return '<div class="subtle">输入关键词后检索段落、图注、表格和参考文献。构建知识库后可搜索 “coercivity”、“NdFeB”、“micromagnetic”等主题。</div>'
+        return '<div class="subtle">输入关键词后检索段落、图注、表格和参考文献。构建知识库后可按研究对象、方法或指标搜索。</div>'
     if not rows:
         return '<div class="subtle">没有检索结果。请先点击“构建知识库”，或换一个关键词。</div>'
     items = []

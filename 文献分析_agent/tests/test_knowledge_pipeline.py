@@ -48,21 +48,21 @@ def seed_parsed_paper(db: AnalysisDB, tmp_path: Path) -> Path:
         VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
-            "Coercivity optimization in NdFeB magnets",
+            "Outcome Metric optimization in TopicAlpha magnets",
             "10.1000/knowledge",
             2025,
             "Magnetics Test",
             json.dumps(["A Researcher"]),
-            "This study analyzes grain boundary diffusion for coercivity optimization.",
+            "This study analyzes grain boundary diffusion for outcome metric optimization.",
         ),
     )
     paper_id = int(cur.lastrowid)
-    json_path = parsed_dir / f"paper_{paper_id}_coercivity.json"
+    json_path = parsed_dir / f"paper_{paper_id}_outcome metric.json"
     json_path.write_text(
         json.dumps(
             {
                 "metadata": {
-                    "title": "Coercivity optimization in NdFeB magnets",
+                    "title": "Outcome Metric optimization in TopicAlpha magnets",
                     "doi": "10.1000/knowledge",
                     "year": 2025,
                     "venue": "Magnetics Test",
@@ -72,14 +72,14 @@ def seed_parsed_paper(db: AnalysisDB, tmp_path: Path) -> Path:
                 "paragraphs": [
                     {
                         "id": "p00001",
-                        "text": "Grain boundary diffusion improves coercivity in NdFeB magnets to 20 kOe while preserving remanence.",
+                        "text": "Grain boundary diffusion improves outcome metric in TopicAlpha magnets to 20 kOe while preserving outcome retention.",
                         "page": 1,
                         "section_path": ["Abstract"],
                         "citations": ["[1]"],
                     },
                     {
                         "id": "p00002",
-                        "text": "However, the process has a trade-off between coercivity and energy product in thick samples.",
+                        "text": "However, the process has a trade-off between outcome metric and energy product in thick samples.",
                         "page": 2,
                         "section_path": ["Discussion"],
                         "citations": [],
@@ -87,7 +87,7 @@ def seed_parsed_paper(db: AnalysisDB, tmp_path: Path) -> Path:
                 ],
                 "figures": [{"label": "Figure 1", "caption": "Figure 1. Diffusion microstructure.", "page": 2}],
                 "tables": [{"label": "Table 1", "caption": "Table 1. Magnetic properties.", "text": "Hcj 20 kOe", "rows": ["Hcj 20 kOe"]}],
-                "references": [{"raw_text": "[1] Prior coercivity study. doi:10.1000/ref 2024.", "doi": "10.1000/ref", "url": None, "year": 2024}],
+                "references": [{"raw_text": "[1] Prior outcome metric study. doi:10.1000/ref 2024.", "doi": "10.1000/ref", "url": None, "year": 2024}],
             },
             ensure_ascii=False,
         ),
@@ -118,13 +118,13 @@ def test_corpus_index_searches_paragraphs_tables_and_references(tmp_path: Path) 
         parsed_dir = seed_parsed_paper(db, tmp_path)
 
         result = CorpusIndexAgent(db, parsed_dir, tmp_path / "index").run()
-        rows = db.search_chunks_bm25("coercivity", limit=5)
+        rows = db.search_chunks_bm25("outcome metric", limit=5)
 
         assert result["documents"] == 1
         assert result["chunks"] == 5
         assert rows
         assert any(row["chunk_type"] == "paragraph" for row in rows)
-        assert HybridSearchAgent(db).search("coercivity", limit=3)
+        assert HybridSearchAgent(db).search("outcome metric", limit=3)
     finally:
         db.close()
 
@@ -142,8 +142,8 @@ def test_cards_graph_and_wiki_keep_evidence_ids(tmp_path: Path) -> None:
         wiki_pages = [json.loads(row["page_json"]) for row in db.wiki_pages()]
 
         assert card_result == {"cards": 1}
-        assert card["materials"] == ["NdFeB"]
-        assert "coercivity" in card["properties"]
+        assert "TopicAlpha" in card["materials"]
+        assert "quantitative result" in card["properties"]
         assert card["claims"][0]["evidence_ids"][0].startswith(f"p:{card['paper_id']}:")
         assert graph_result["nodes"] > 0
         assert (tmp_path / "graph" / "graph.json").exists()

@@ -34,14 +34,14 @@ def seed_papers(db: LiteratureDB, count: int = 30) -> None:
             RawSourceRecord(
                 source="crossref",
                 source_id=f"10.1000/v3.{index}",
-                query="NdFeB grain boundary diffusion",
+                query="TopicAlpha grain boundary diffusion",
                 raw_payload={
                     "DOI": f"10.1000/v3.{index}",
-                    "title": [f"NdFeB grain boundary diffusion coercivity study {index}"],
+                    "title": [f"TopicAlpha grain boundary diffusion outcome metric study {index}"],
                     "issued": {"date-parts": [[2020 + index % 5]]},
-                    "container-title": ["Journal of Permanent Magnets"],
+                    "container-title": ["Journal of Research Topics"],
                     "URL": f"https://doi.org/10.1000/v3.{index}",
-                    "abstract": "Permanent magnet coercivity and grain boundary diffusion.",
+                    "abstract": "Research topic outcome metric and grain boundary diffusion.",
                 },
             ),
         )
@@ -53,7 +53,7 @@ def seed_papers(db: LiteratureDB, count: int = 30) -> None:
 def test_goal_defaults_to_twenty(tmp_path: Path) -> None:
     db = make_db(tmp_path)
     try:
-        goal_id = ScientificGoalAgent(db).create(title="NdFeB coercivity mechanisms")
+        goal_id = ScientificGoalAgent(db).create(title="TopicAlpha outcome metric mechanisms")
         goal = db.scientific_goal(goal_id)
         assert goal["default_target_count"] == 20
     finally:
@@ -64,7 +64,7 @@ def test_round_selection_and_approval_gate(tmp_path: Path) -> None:
     db = make_db(tmp_path)
     try:
         seed_papers(db, 30)
-        goal_id = ScientificGoalAgent(db).create(title="NdFeB grain boundary diffusion")
+        goal_id = ScientificGoalAgent(db).create(title="TopicAlpha grain boundary diffusion")
         round_id = db.create_exploration_round(goal_id, 20, "planned")
         goal = db.scientific_goal(goal_id)
         selected = LiteratureSelectionAgent(db).select(round_id=round_id, goal=goal, target_count=20)
@@ -85,7 +85,7 @@ def test_literature_selection_can_use_external_llm_rerank(tmp_path: Path) -> Non
         seed_papers(db, 5)
         papers = db.rows("SELECT * FROM papers ORDER BY id")
         requested_id = papers[0]["id"]
-        goal_id = ScientificGoalAgent(db).create(title="NdFeB grain boundary diffusion")
+        goal_id = ScientificGoalAgent(db).create(title="TopicAlpha grain boundary diffusion")
         round_id = db.create_exploration_round(goal_id, 1, "planned")
 
         class FakeClient:
@@ -99,8 +99,8 @@ def test_literature_selection_can_use_external_llm_rerank(tmp_path: Path) -> Non
                         {
                             "paper_id": requested_id,
                             "score": 0.93,
-                            "reason": "Directly targets NdFeB grain-boundary diffusion and coercivity.",
-                            "material_tags": ["NdFeB", "Grain boundary", "Coercivity"],
+                            "reason": "Directly targets TopicAlpha grain-boundary diffusion and outcome metric.",
+                            "topic_tags": ["TopicAlpha", "Grain boundary", "Outcome Metric"],
                         }
                     ]
                 }
@@ -124,7 +124,7 @@ def test_literature_selection_ignores_unknown_llm_ids_and_fills_with_rules(tmp_p
     db = make_db(tmp_path)
     try:
         seed_papers(db, 5)
-        goal_id = ScientificGoalAgent(db).create(title="NdFeB grain boundary diffusion")
+        goal_id = ScientificGoalAgent(db).create(title="TopicAlpha grain boundary diffusion")
         round_id = db.create_exploration_round(goal_id, 2, "planned")
 
         class FakeClient:
@@ -153,7 +153,7 @@ def test_manual_tasks_intake_and_analysis(tmp_path: Path) -> None:
     db = make_db(tmp_path)
     try:
         seed_papers(db, 3)
-        goal_id = ScientificGoalAgent(db).create(title="NdFeB grain boundary diffusion")
+        goal_id = ScientificGoalAgent(db).create(title="TopicAlpha grain boundary diffusion")
         round_id = db.create_exploration_round(goal_id, 3, "awaiting_user_approval")
         LiteratureSelectionAgent(db).select(round_id=round_id, goal=db.scientific_goal(goal_id), target_count=3)
         RoundApprovalAgent(db).approve(round_id)
@@ -176,7 +176,7 @@ def test_manual_intake_matches_arbitrary_download_name_and_canonicalizes(tmp_pat
     db = make_db(tmp_path)
     try:
         seed_papers(db, 1)
-        goal_id = ScientificGoalAgent(db).create(title="NdFeB grain boundary diffusion")
+        goal_id = ScientificGoalAgent(db).create(title="TopicAlpha grain boundary diffusion")
         round_id = db.create_exploration_round(goal_id, 1, "awaiting_user_approval")
         LiteratureSelectionAgent(db).select(round_id=round_id, goal=db.scientific_goal(goal_id), target_count=1)
         RoundApprovalAgent(db).approve(round_id)
@@ -215,14 +215,14 @@ def test_round_acquisition_downloads_only_current_round(tmp_path: Path, monkeypa
                 )
             )
 
-        goal_id = ScientificGoalAgent(db).create(title="NdFeB grain boundary diffusion")
+        goal_id = ScientificGoalAgent(db).create(title="TopicAlpha grain boundary diffusion")
         round_one = db.create_exploration_round(goal_id, 1, "awaiting_user_approval")
         round_two = db.create_exploration_round(goal_id, 1, "awaiting_user_approval")
         db.upsert_round_candidate(
-            RoundCandidate(round_id=round_one, paper_id=papers[0]["id"], rank=1, selection_score=1.0, selection_reason="test", material_tags=["NdFeB"], evidence_level="medium")
+            RoundCandidate(round_id=round_one, paper_id=papers[0]["id"], rank=1, selection_score=1.0, selection_reason="test", material_tags=["TopicAlpha"], evidence_level="medium")
         )
         db.upsert_round_candidate(
-            RoundCandidate(round_id=round_two, paper_id=papers[1]["id"], rank=1, selection_score=1.0, selection_reason="test", material_tags=["NdFeB"], evidence_level="medium")
+            RoundCandidate(round_id=round_two, paper_id=papers[1]["id"], rank=1, selection_score=1.0, selection_reason="test", material_tags=["TopicAlpha"], evidence_level="medium")
         )
 
         def fake_fetch_pdf(self, url: str) -> tuple[bytes, str]:
@@ -260,13 +260,13 @@ def test_round_acquisition_reports_reused_existing_pdf(tmp_path: Path) -> None:
             error_message=None,
         )
 
-        goal_id = ScientificGoalAgent(db).create(title="NdFeB grain boundary diffusion")
+        goal_id = ScientificGoalAgent(db).create(title="TopicAlpha grain boundary diffusion")
         round_id = db.create_exploration_round(goal_id, 2, "awaiting_user_approval")
         db.upsert_round_candidate(
-            RoundCandidate(round_id=round_id, paper_id=papers[0]["id"], rank=1, selection_score=1.0, selection_reason="test", material_tags=["NdFeB"], evidence_level="high")
+            RoundCandidate(round_id=round_id, paper_id=papers[0]["id"], rank=1, selection_score=1.0, selection_reason="test", material_tags=["TopicAlpha"], evidence_level="high")
         )
         db.upsert_round_candidate(
-            RoundCandidate(round_id=round_id, paper_id=papers[1]["id"], rank=2, selection_score=0.9, selection_reason="test", material_tags=["NdFeB"], evidence_level="low")
+            RoundCandidate(round_id=round_id, paper_id=papers[1]["id"], rank=2, selection_score=0.9, selection_reason="test", material_tags=["TopicAlpha"], evidence_level="low")
         )
 
         RoundApprovalAgent(db).approve(round_id)
@@ -288,7 +288,7 @@ def test_delete_goal_removes_v3_round_state_not_papers(tmp_path: Path) -> None:
     db = make_db(tmp_path)
     try:
         seed_papers(db, 1)
-        goal_id = ScientificGoalAgent(db).create(title="NdFeB grain boundary diffusion")
+        goal_id = ScientificGoalAgent(db).create(title="TopicAlpha grain boundary diffusion")
         round_id = db.create_exploration_round(goal_id, 1, "awaiting_user_approval")
         LiteratureSelectionAgent(db).select(round_id=round_id, goal=db.scientific_goal(goal_id), target_count=1)
         assert len(db.round_candidates(round_id)) == 1
@@ -306,7 +306,7 @@ def test_delete_goal_removes_v3_round_state_not_papers(tmp_path: Path) -> None:
 def test_round_plan_without_candidates_needs_retry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     db = make_db(tmp_path)
     try:
-        goal_id = ScientificGoalAgent(db).create(title="A very narrow permanent magnet question")
+        goal_id = ScientificGoalAgent(db).create(title="A very narrow research topic question")
 
         monkeypatch.setattr("lit_agent.agents.rounds.SourceDiscoveryAgent.run", lambda self, plan, run_id=None: {})
         monkeypatch.setattr("lit_agent.agents.rounds.MetadataNormalizeAgent.run", lambda self: 0)

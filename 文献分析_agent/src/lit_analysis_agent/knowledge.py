@@ -14,34 +14,19 @@ from .db import AnalysisDB
 from .text import normalize_whitespace
 
 
-MATERIAL_TERMS = {
-    "NdFeB": ["ndfeb", "nd-fe-b", "neodymium", "nd2fe14b"],
-    "rare-earth-reduced permanent magnets": ["rare-earth reduced", "rare earth reduced", "rare-earth efficient"],
-    "rare-earth-free permanent magnets": ["rare-earth-free", "rare earth free", "mnbi", "mnal"],
-    "FeNi": ["feni", "fe-ni"],
-    "MnAl": ["mnal", "mn-al"],
-    "SmCo": ["smco", "sm-co"],
-    "ferrite": ["ferrite", "srfe", "barium hexaferrite"],
-}
 METHOD_TERMS = {
-    "micromagnetic simulation": ["micromagnetic", "hysteresis simulation"],
-    "first-principles calculation": ["first principles", "ab initio", "density functional"],
-    "machine learning optimization": ["machine learning", "genetic algorithm", "optimization"],
-    "grain boundary diffusion": ["grain boundary diffusion", "gbd"],
-    "additive manufacturing": ["laser powder bed", "additive manufacturing", "3d printing"],
-}
-PROPERTY_TERMS = {
-    "coercivity": ["coercivity", "coercive field", "hcj", "hci"],
-    "remanence": ["remanence", "remanent"],
-    "energy product": ["energy density product", "energy product", "bhmax", "(bh)max"],
-    "magnetization": ["magnetization", "saturation magnetization"],
-    "anisotropy": ["anisotropy", "anisotropic"],
+    "computational modeling": ["simulation", "modeling", "model", "algorithm"],
+    "machine learning": ["machine learning", "neural network", "classification", "regression"],
+    "statistical analysis": ["statistical", "regression analysis", "confidence interval"],
+    "experimental study": ["experiment", "experimental", "measurement", "survey"],
+    "systematic review": ["systematic review", "meta-analysis", "literature review"],
 }
 LIMITATION_TERMS = ["limit", "limitation", "challenge", "however", "but", "uncertain", "trade-off"]
 STOPWORDS = {
     "the", "and", "for", "with", "that", "this", "from", "are", "was", "were", "has", "have",
     "using", "into", "its", "can", "will", "not", "their", "these", "those", "study", "paper",
 }
+TOPIC_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9-]{2,}|[\u4e00-\u9fff]{2,}")
 
 
 @dataclass(frozen=True)
@@ -334,9 +319,9 @@ def chunks_for_document(doc: CorpusDocument) -> list[dict[str, Any]]:
 
 def paper_card_for_document(doc: CorpusDocument) -> dict[str, Any]:
     text = " ".join([str(doc.metadata.get("title") or ""), str(doc.metadata.get("abstract") or "")] + [str(p.get("text") or "") for p in doc.paragraphs[:16]])
-    materials = _matches(text, MATERIAL_TERMS)
+    materials = _research_topics(str(doc.metadata.get("title") or ""), str(doc.metadata.get("abstract") or ""))
     methods = _matches(text, METHOD_TERMS)
-    properties = _matches(text, PROPERTY_TERMS)
+    properties = _metric_labels(doc.paragraphs)
     evidence_paragraphs = _best_evidence(doc.paragraphs, materials + methods + properties)
     paper_id = doc.paper_id or _paper_id_from_path(doc.source_json_path) or 0
     claims = [
@@ -458,21 +443,38 @@ def _best_evidence(paragraphs: list[dict[str, Any]], labels: list[str]) -> list[
         if score > 0 and len(text) > 40:
             scored.append((score, paragraph))
     scored.sort(key=lambda item: item[0], reverse=True)
-    return [paragraph for _, paragraph in scored[:8]]
+    if scored:
+        return [paragraph for _, paragraph in scored[:8]]
+    return [paragraph for paragraph in paragraphs if len(str(paragraph.get("text") or "")) > 40][:8]
 
 
 def _metric_sentences(paragraphs: list[dict[str, Any]]) -> list[str]:
     hits = []
     for paragraph in paragraphs:
         text = str(paragraph.get("text") or "")
-        if any(term in text.lower() for term in ["coerc", "energy", "reman", "magnetization", "anisotropy"]) and re.search(r"\d", text):
+        if re.search(r"\d", text):
             hits.append(text)
     return hits[:5]
 
 
+def _research_topics(title: str, abstract: str) -> list[str]:
+    topics: list[str] = []
+    for match in TOPIC_TOKEN_RE.finditer(f"{title} {abstract}"):
+        token = match.group(0).strip()
+        if token.lower() in STOPWORDS or token.lower() in {"analysis", "approach", "method", "methods", "results"}:
+            continue
+        if token not in topics:
+            topics.append(token)
+    return topics[:8]
+
+
+def _metric_labels(paragraphs: list[dict[str, Any]]) -> list[str]:
+    return ["quantitative result"] if _metric_sentences(paragraphs) else []
+
+
 def _research_object(materials: list[str], properties: list[str]) -> str:
-    left = ", ".join(materials[:3]) or "permanent magnets"
-    right = ", ".join(properties[:3]) or "magnetic performance"
+    left = ", ".join(materials[:3]) or "the research topic"
+    right = ", ".join(properties[:3]) or "the reported outcomes"
     return f"{left} for {right}"
 
 

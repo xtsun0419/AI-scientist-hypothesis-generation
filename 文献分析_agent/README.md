@@ -34,7 +34,7 @@ python3 run.py build-all
 
 ```bash
 python3 run.py index-corpus
-python3 run.py search coercivity --limit 5 --json
+python3 run.py search "研究对象 关键机制" --limit 5 --json
 python3 run.py build-paper-cards
 python3 run.py build-graph
 python3 run.py build-wiki
@@ -42,7 +42,7 @@ python3 run.py build-all --json
 ```
 
 - RAG 层：从 `parsed_papers/*.json` 建立 SQLite FTS5 索引，并写入本地哈希向量；未配置外部 embedding 时自动使用本地向量兜底。
-- Paper Cards 层：每篇论文生成研究对象、材料体系、方法、性能、结论、局限和 evidence ids。
+- Paper Cards 层：每篇论文生成研究对象、主题实体、方法、指标、结论、局限和 evidence ids。
 - Graph 层：生成 `wiki_topic`、`paper`、`claim`、`material`、`method`、`property`、`evidence` 节点，并导出 `data/graph/graph.json`。
 - Wiki 层：围绕 topic 生成带 evidence ids 的 Markdown/JSON 条目；没有证据的内容进入 `needs_evidence`。
 

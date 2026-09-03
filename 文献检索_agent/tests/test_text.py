@@ -8,4 +8,4 @@ def test_normalize_doi_from_url_and_prefix() -> None:
 
 
 def test_normalize_title() -> None:
-    assert normalize_title("  Coercivity in Nd-Fe-B Permanent Magnets! ") == "coercivity in nd fe b permanent magnets"
+    assert normalize_title("  Outcome Metric in Topic-Alpha Research Topics! ") == "outcome metric in topic alpha research topics"

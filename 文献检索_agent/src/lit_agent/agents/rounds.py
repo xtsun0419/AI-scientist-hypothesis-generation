@@ -46,16 +46,8 @@ LLM_SELECTION_ENV = "LIT_AGENT_SELECTION_MODE"
 LLM_SELECTION_MODES = {"llm", "hybrid", "external_llm"}
 MAX_LLM_CANDIDATES = 60
 
-MATERIAL_TERMS = {
-    "NdFeB": ["ndfeb", "nd-fe-b", "neodymium"],
-    "SmCo": ["smco", "sm-co", "samarium cobalt"],
-    "Ferrite": ["ferrite", "hexaferrite", "barium"],
-    "AlNiCo": ["alnico", "al-ni-co"],
-    "Rare-earth-free": ["rare-earth-free", "rare earth free", "mnbi", "feco", "mnal"],
-    "Grain boundary": ["grain boundary", "diffusion", "gbd"],
-    "Coercivity": ["coercivity", "coercive"],
-    "Remanence": ["remanence", "remanent"],
-}
+_TERM_RE = re.compile(r"[A-Za-z][A-Za-z0-9-]{2,}|[\u4e00-\u9fff]{2,}")
+_GENERIC_STOPWORDS = {"about", "analysis", "and", "for", "from", "into", "research", "study", "the", "with"}
 
 
 class ScientificGoalAgent:
@@ -69,7 +61,7 @@ class ScientificGoalAgent:
         *,
         title: str,
         description: str | None = None,
-        domain: str = "permanent_magnets",
+        domain: str = "general_research",
         target_count: int = DEFAULT_TARGET_COUNT,
     ) -> int:
         terms = _goal_terms(title, description)
@@ -236,7 +228,7 @@ class LiteratureSelectionAgent:
             rule_score, row, rule_reason, rule_tags = by_id[paper_id]
             score = _safe_float(item.get("score"), rule_score)
             reason = _clean_text(item.get("reason")) or rule_reason
-            tags = _clean_list(item.get("material_tags")) or rule_tags
+            tags = _clean_list(item.get("topic_tags") or item.get("material_tags")) or rule_tags
             selected.append((score, row, f"LLM推荐: {reason}", tags))
             used.add(paper_id)
             if len(selected) >= target_count:
@@ -397,7 +389,7 @@ class PdfAnalysisAgent:
             analysis_type = "pdf" if row["paper_id"] in downloaded else "metadata"
             evidence_level = "high" if analysis_type == "pdf" else "low"
             text = " ".join(str(row[key] or "") for key in ["title", "abstract", "venue"])
-            tags = _material_tags(text)
+            tags = _topic_tags(text, _goal_terms(str(row["title"] or ""), str(row["abstract"] or ""))["include"])
             findings = _findings_from_text(text, tags)
             summary = f"{row['title']} is treated as {evidence_level}-evidence for this round based on {analysis_type}."
             self.db.upsert_paper_analysis(
@@ -457,23 +449,13 @@ class NextQueryProposalAgent:
 
 
 def _goal_terms(title: str, description: str | None) -> dict[str, list[str]]:
-    text = f"{title} {description or ''}".lower()
-    include = ["permanent magnet", "coercivity", "remanence"]
-    for term in [
-        "ndfeb",
-        "nd-fe-b",
-        "smco",
-        "ferrite",
-        "alnico",
-        "rare-earth-free",
-        "grain boundary",
-        "diffusion",
-        "energy product",
-        "recycling",
-    ]:
-        if term in text:
+    text = f"{title} {description or ''}"
+    include = []
+    for match in _TERM_RE.finditer(text):
+        term = match.group(0).strip()
+        if len(term) >= 3 and term.lower() not in _GENERIC_STOPWORDS and term not in include:
             include.append(term)
-    return {"include": list(dict.fromkeys(include)), "exclude": ["geomagnetic", "meteorite", "dark energy"]}
+    return {"include": include[:12], "exclude": []}
 
 
 def _query_plan_for_goal(
@@ -506,7 +488,7 @@ def _selection_score(row: Any, goal: Any) -> tuple[float, str, list[str]]:
     text = " ".join(str(row[key] or "") for key in ["title", "abstract", "venue", "document_type"]).lower()
     include_terms = json.loads(goal["include_terms_json"])
     matched = [term for term in include_terms if term.lower() in text]
-    tags = _material_tags(text)
+    tags = _topic_tags(text, include_terms)
     score = float(row["relevance_score"] or 0.2)
     score += 0.12 * len(matched)
     score += 0.08 * min(len(tags), 3)
@@ -530,8 +512,8 @@ def _llm_selection_prompt(
         "constraints": [
             "Use only paper_id values in candidates.",
             "Do not invent missing metadata, DOI, or PDF availability.",
-            "Prefer a useful mix of core papers, recent papers, and material/mechanism diversity.",
-            "Prefer papers that directly inform the scientific goal over generic permanent-magnet records.",
+            "Prefer a useful mix of core papers, recent papers, and topic diversity.",
+            "Prefer papers that directly inform the scientific goal over generic records.",
             "Return at most target_count records.",
         ],
         "output_schema": {
@@ -540,7 +522,7 @@ def _llm_selection_prompt(
                     "paper_id": "integer candidate id",
                     "score": "0-1 relevance/usefulness score",
                     "reason": "concise reason grounded in title/abstract/metadata",
-                    "material_tags": ["short material or mechanism tags"],
+                    "topic_tags": ["short topic or method tags"],
                 }
             ]
         },
@@ -568,7 +550,7 @@ def _candidate_for_llm(item: tuple[float, Any, str, list[str]]) -> dict[str, Any
         "document_type": row["document_type"],
         "rule_score": round(float(score), 4),
         "rule_reason": reason,
-        "material_tags": tags,
+        "topic_tags": tags,
         "access_status": row["access_status"],
         "has_pdf_url": bool(row["pdf_url"]),
         "is_oa": bool(row["is_oa"]) if row["is_oa"] is not None else None,
@@ -650,23 +632,15 @@ def _evidence_level(row: Any) -> str:
     return "low"
 
 
-def _material_tags(text: str) -> list[str]:
+def _topic_tags(text: str, terms: list[str]) -> list[str]:
     lower = text.lower()
-    tags = []
-    for label, terms in MATERIAL_TERMS.items():
-        if any(term in lower for term in terms):
-            tags.append(label)
-    return tags
+    return [term for term in terms if term.lower() in lower][:8]
 
 
 def _findings_from_text(text: str, tags: list[str]) -> list[str]:
     findings = []
     for tag in tags[:4]:
         findings.append(f"Mentions {tag}.")
-    if "coerc" in text.lower():
-        findings.append("Potentially relevant to coercivity mechanisms.")
-    if "reman" in text.lower():
-        findings.append("Potentially relevant to remanence or magnetic performance.")
     return findings or ["Relevant metadata was captured for follow-up."]
 
 
@@ -678,10 +652,7 @@ def _collect_terms(analyses: list[Any]) -> list[str]:
 
 
 def _next_queries_from_terms(terms: list[str]) -> list[str]:
-    base = ["permanent magnet mechanism", "permanent magnet coercivity"]
-    for term in terms[:6]:
-        base.append(f"{term} permanent magnet")
-    return list(dict.fromkeys(base))[:8]
+    return list(dict.fromkeys(term for term in terms if term))[:8]
 
 
 def _downloaded_paper_ids(db: LiteratureDB) -> set[int]:

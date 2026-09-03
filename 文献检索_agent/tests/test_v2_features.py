@@ -32,8 +32,8 @@ def test_source_failure_is_recorded(tmp_path: Path) -> None:
     db = make_db(tmp_path)
     try:
         plan = QueryPlan(
-            domain="permanent_magnets",
-            queries=["NdFeB coercivity"],
+            domain="general_research",
+            queries=["TopicAlpha outcome metric"],
             include_terms=[],
             exclude_terms=[],
             sources=["semantic_scholar"],
@@ -41,7 +41,7 @@ def test_source_failure_is_recorded(tmp_path: Path) -> None:
             to_year=2026,
             max_results_per_query=1,
         )
-        run_id = db.create_search_run("permanent_magnets", 2020, 2026, {"queries": plan.queries})
+        run_id = db.create_search_run("general_research", 2020, 2026, {"queries": plan.queries})
         counts = SourceDiscoveryAgent(
             db,
             connectors={"semantic_scholar": FailingConnector()},
@@ -66,10 +66,10 @@ def test_llm_review_skips_without_api_key(tmp_path: Path, monkeypatch) -> None:
             RawSourceRecord(
                 source="crossref",
                 source_id="10.1000/boundary",
-                query="permanent magnet",
+                query="research topic",
                 raw_payload={
                     "DOI": "10.1000/boundary",
-                    "title": ["Predictive screening of rare-earth-free magnetic compounds"],
+                    "title": ["Predictive screening of exploratory magnetic compounds"],
                     "issued": {"date-parts": [[2024]]},
                     "URL": "https://doi.org/10.1000/boundary",
                 },
@@ -81,9 +81,9 @@ def test_llm_review_skips_without_api_key(tmp_path: Path, monkeypatch) -> None:
         MetadataNormalizeAgent(db).run()
         DeduplicationAgent(db).run()
         plan = QueryPlan(
-            domain="permanent_magnets",
-            queries=["permanent magnet"],
-            include_terms=["permanent magnet", "rare-earth-free"],
+            domain="general_research",
+            queries=["research topic"],
+            include_terms=["research topic", "exploratory"],
             exclude_terms=[],
             sources=["crossref"],
             from_year=2020,
@@ -107,21 +107,21 @@ def test_llm_response_parser() -> None:
         {
             "decision": "include",
             "confidence": 0.82,
-            "reason": "Mentions permanent magnets and coercivity.",
-            "matched_domain_terms": ["permanent magnets", "coercivity"],
+            "reason": "Mentions research topics and outcome metric.",
+            "matched_domain_terms": ["research topics", "outcome metric"],
             "exclude_reason": None,
         },
     )
     assert review.decision == "include"
     assert review.confidence == 0.82
-    assert "coercivity" in review.matched_domain_terms
+    assert "outcome metric" in review.matched_domain_terms
 
 
 def test_mode_presets_limit_query_plan(tmp_path: Path) -> None:
     orchestrator = OrchestratorAgent(db_path=tmp_path / "db.sqlite")
     smoke = orchestrator.plan_queries(mode="smoke")
     pilot = orchestrator.plan_queries(mode="pilot")
-    assert len(smoke.queries) == 2
+    assert len(smoke.queries) == 0
     assert smoke.max_results_per_query == 5
-    assert len(pilot.queries) == 4
+    assert len(pilot.queries) == 0
     assert pilot.max_results_per_query == 5

@@ -1,6 +1,6 @@
 # 文献检索 Agent
 
-这是一个面向“永磁领域”的单进程、多 Agent 文献检索 CLI 原型。v2 主线是可复现的多源文献语料构建：多源召回、限流与失败记录、元数据去重、DOI/OA/PDF 可得性追踪、边界相关性复核和覆盖率报表。
+这是一个面向任意研究主题的单进程、多 Agent 文献检索 CLI 原型。v2 主线是可复现的多源文献语料构建：多源召回、限流与失败记录、元数据去重、DOI/OA/PDF 可得性追踪、边界相关性复核和覆盖率报表。
 
 目标：
 
@@ -13,7 +13,7 @@
 
 ```bash
 python3 run.py init
-python3 run.py goal create --title "NdFeB grain boundary diffusion for high coercivity"
+python3 run.py goal create --title "研究对象在特定条件下的机制与验证问题"
 python3 run.py round plan --goal-id 1 --target-count 20
 python3 run.py round approve --round-id 1
 python3 run.py round acquire --round-id 1
@@ -21,8 +21,6 @@ python3 run.py round intake-manual --round-id 1
 python3 run.py round analyze --round-id 1
 python3 run.py round propose-next --round-id 1
 python3 run.py web
-python3 run.py search --mode smoke --domain permanent_magnets --from-year 2020 --to-year 2026
-python3 run.py search --mode pilot --domain permanent_magnets --from-year 1900 --to-year 2026
 python3 run.py resolve-oa
 python3 run.py review-relevance
 python3 run.py download
@@ -38,7 +36,7 @@ python3 run.py export --format csv
 - `pilot`：约百篇级别验收，用于 v2 方法检查。
 - `full`：使用配置中的完整查询规模。
 
-v3 推荐先使用 `goal` / `round` 命令做小批量迭代探索。每轮默认 20 篇，系统会先给出候选，等待人工确认后才下载；非开放或下载失败论文会进入手动下载任务，推荐放置目录为 `data/manual_pdfs/goal_<id>/round_<id>/`。
+v3 推荐先使用 `goal` / `round` 命令做小批量迭代探索。系统会从科学问题的标题和说明中提取检索与相关性关键词；每轮默认 20 篇，系统会先给出候选，等待人工确认后才下载；非开放或下载失败论文会进入手动下载任务，推荐放置目录为 `data/manual_pdfs/goal_<id>/round_<id>/`。
 
 也可以启动本地交互网页：
 
@@ -109,7 +107,7 @@ v2 报表会额外输出：
 PDF 下载目录可以用全局参数 `--pdf-dir` 指定，适合把大量 PDF 放到外接硬盘：
 
 ```bash
-python3 run.py --pdf-dir /Volumes/YourDisk/permanent_magnet_pdfs download
+python3 run.py --pdf-dir /Volumes/YourDisk/research_pdfs download
 ```
 
 推荐做法是：SQLite 数据库留在项目目录，PDF 大文件放外接硬盘。数据库会记录 PDF 本地路径、文件哈希、大小和下载状态；硬盘未连接时不要运行 `download`，否则会把文件写到错误位置或触发路径问题。

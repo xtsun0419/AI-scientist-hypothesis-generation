@@ -364,7 +364,7 @@ def _unknown_terms(texts: list[str], matched: list[dict[str, Any]]) -> list[str]
     known_labels = {str(item["label"]).lower() for item in matched}
     generic = {
         "研究", "影响", "机制", "性能", "体系", "材料", "结构", "方法",
-        "计算", "实验", "验证", "分析", "磁体", "永磁",
+        "计算", "实验", "验证", "分析",
     }
     unknown: list[str] = []
     for text in texts:

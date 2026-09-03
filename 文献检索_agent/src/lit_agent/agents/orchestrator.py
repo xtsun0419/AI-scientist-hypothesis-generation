@@ -103,7 +103,7 @@ class OrchestratorAgent:
                 papers = DeduplicationAgent(db).run()
                 relevance = RelevanceJudgeAgent(db).run(plan)
                 access = OAResolverAgent(db).run()
-                llm_stats = LLMRelevanceReviewAgent(db).run() if llm_review else {"reviewed": 0}
+                llm_stats = LLMRelevanceReviewAgent(db).run(plan) if llm_review else {"reviewed": 0}
                 self.record_metrics(db, run_id)
                 db.finish_search_run(run_id, "finished")
             except Exception:
@@ -216,7 +216,7 @@ class OrchestratorAgent:
         db = LiteratureDB(self.db_path)
         try:
             db.init_schema()
-            return LLMRelevanceReviewAgent(db).run()
+            return LLMRelevanceReviewAgent(db).run(self.plan_queries())
         finally:
             db.close()
 
@@ -225,7 +225,7 @@ class OrchestratorAgent:
         *,
         title: str,
         description: str | None = None,
-        domain: str = "permanent_magnets",
+        domain: str = "general_research",
         target_count: int = 20,
     ) -> int:
         db = LiteratureDB(self.db_path)

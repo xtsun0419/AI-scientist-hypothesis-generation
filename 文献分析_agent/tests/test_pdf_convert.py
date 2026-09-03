@@ -48,7 +48,7 @@ def make_db(tmp_path: Path) -> AnalysisDB:
     return db
 
 
-def seed_paper_pdf(db: AnalysisDB, pdf_path: Path, *, title: str = "NdFeB conversion test") -> int:
+def seed_paper_pdf(db: AnalysisDB, pdf_path: Path, *, title: str = "TopicAlpha conversion test") -> int:
     cur = db.conn.execute(
         """
         INSERT INTO papers(title, doi, year, venue, authors_json, abstract)
@@ -70,21 +70,21 @@ def seed_paper_pdf(db: AnalysisDB, pdf_path: Path, *, title: str = "NdFeB conver
 
 def test_structure_blocks_extracts_sections_captions_references_and_citations() -> None:
     blocks = [
-        {"text": "A Study of NdFeB Grain Boundary Diffusion", "page": 1, "font_size": 18},
+        {"text": "A Study of TopicAlpha Grain Boundary Diffusion", "page": 1, "font_size": 18},
         {"text": "Abstract", "page": 1, "font_size": 12},
-        {"text": "This work studies coercivity in NdFeB magnets [1].", "page": 1, "font_size": 10},
+        {"text": "This work studies outcome metric in TopicAlpha magnets [1].", "page": 1, "font_size": 10},
         {"text": "1. Introduction", "page": 2, "font_size": 14},
-        {"text": "Grain-boundary diffusion improves coercivity (Smith et al., 2020).", "page": 2, "font_size": 10},
+        {"text": "Grain-boundary diffusion improves outcome metric (Smith et al., 2020).", "page": 2, "font_size": 10},
         {"text": "Figure 1. Microstructure after diffusion.", "page": 3, "font_size": 9},
         {"text": "Table 1. Magnetic properties summary.", "page": 4, "font_size": 9},
         {"text": "References", "page": 5, "font_size": 14},
-        {"text": "[1] Smith A. NdFeB diffusion. Journal 2020. doi:10.1000/test.doi", "page": 5, "font_size": 10},
+        {"text": "[1] Smith A. TopicAlpha diffusion. Journal 2020. doi:10.1000/test.doi", "page": 5, "font_size": 10},
     ]
 
     result = structure_blocks(blocks, metadata_title=None)
 
-    assert result["title"] == "A Study of NdFeB Grain Boundary Diffusion"
-    assert result["abstract"] == "This work studies coercivity in NdFeB magnets [1]."
+    assert result["title"] == "A Study of TopicAlpha Grain Boundary Diffusion"
+    assert result["abstract"] == "This work studies outcome metric in TopicAlpha magnets [1]."
     assert [section["heading"] for section in result["sections"]] == ["Abstract", "1. Introduction", "References"]
     assert result["figures"][0]["label"].lower().startswith("figure")
     assert result["tables"][0]["extraction_quality"] == "text_table"

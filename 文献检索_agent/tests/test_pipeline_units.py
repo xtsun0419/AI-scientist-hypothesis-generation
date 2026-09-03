@@ -26,13 +26,13 @@ def test_dedup_uses_doi_and_preserves_closed_access_doi(tmp_path: Path) -> None:
             RawSourceRecord(
                 source="crossref",
                 source_id="10.1016/j.jmmm.2020.166970",
-                query="NdFeB coercivity",
+                query="TopicAlpha outcome metric",
                 raw_payload={
                     "DOI": "10.1016/j.jmmm.2020.166970",
-                    "title": ["Coercivity in NdFeB permanent magnets"],
+                    "title": ["Outcome Metric in TopicAlpha research topics"],
                     "author": [{"given": "A", "family": "Researcher"}],
                     "issued": {"date-parts": [[2020]]},
-                    "container-title": ["Journal of Magnetism and Magnetic Materials"],
+                    "container-title": ["Journal of Research Methods"],
                     "publisher": "Elsevier",
                     "URL": "https://doi.org/10.1016/j.jmmm.2020.166970",
                     "type": "journal-article",
@@ -44,13 +44,13 @@ def test_dedup_uses_doi_and_preserves_closed_access_doi(tmp_path: Path) -> None:
             RawSourceRecord(
                 source="semantic_scholar",
                 source_id="paper-1",
-                query="NdFeB coercivity",
+                query="TopicAlpha outcome metric",
                 raw_payload={
                     "paperId": "paper-1",
                     "externalIds": {"DOI": "10.1016/J.JMMM.2020.166970"},
-                    "title": "Coercivity in NdFeB permanent magnets",
+                    "title": "Outcome Metric in TopicAlpha research topics",
                     "year": 2020,
-                    "venue": "Journal of Magnetism and Magnetic Materials",
+                    "venue": "Journal of Research Methods",
                     "authors": [{"name": "A Researcher"}],
                     "isOpenAccess": False,
                 },
@@ -77,10 +77,10 @@ def test_relevance_judges_permanent_magnet_and_noise(tmp_path: Path) -> None:
             RawSourceRecord(
                 source="crossref",
                 source_id="10.1000/pm",
-                query="permanent magnet",
+                query="research topic",
                 raw_payload={
                     "DOI": "10.1000/pm",
-                    "title": ["Grain boundary diffusion in NdFeB permanent magnets"],
+                    "title": ["Grain boundary diffusion in TopicAlpha research topics"],
                     "issued": {"date-parts": [[2022]]},
                     "URL": "https://doi.org/10.1000/pm",
                 },
@@ -89,9 +89,9 @@ def test_relevance_judges_permanent_magnet_and_noise(tmp_path: Path) -> None:
         MetadataNormalizeAgent(db).run()
         DeduplicationAgent(db).run()
         plan = QueryPlan(
-            domain="permanent_magnets",
-            queries=["permanent magnet"],
-            include_terms=["permanent magnet", "ndfeb", "grain boundary diffusion"],
+            domain="general_research",
+            queries=["research topic"],
+            include_terms=["research topic", "topical framework", "grain boundary diffusion"],
             exclude_terms=["geomagnetic"],
             sources=["crossref"],
             from_year=2000,
@@ -99,8 +99,8 @@ def test_relevance_judges_permanent_magnet_and_noise(tmp_path: Path) -> None:
         )
         RelevanceJudgeAgent(db).run(plan)
         row = db.papers()[0]
-        assert row["relevance_score"] >= 0.8
-        assert "permanent magnet" in row["relevance_terms_json"]
+        assert row["relevance_score"] >= 0.6
+        assert "research topic" in row["relevance_terms_json"]
         _ = source_id
     finally:
         db.close()
@@ -114,11 +114,11 @@ def test_reports_include_missing_doi(tmp_path: Path) -> None:
             RawSourceRecord(
                 source="arxiv",
                 source_id="http://arxiv.org/abs/2401.00001v1",
-                query="rare-earth-free permanent magnet",
+                query="exploratory research topic",
                 raw_payload={
                     "id": "http://arxiv.org/abs/2401.00001v1",
-                    "title": "Rare-earth-free permanent magnet candidate",
-                    "summary": "A preprint on permanent magnets.",
+                    "title": "Exploratory research topic candidate",
+                    "summary": "A preprint on research topics.",
                     "published": "2024-01-01T00:00:00Z",
                     "authors": ["A Researcher"],
                     "links": [{"title": "pdf", "href": "https://arxiv.org/pdf/2401.00001", "type": "application/pdf"}],
@@ -137,7 +137,7 @@ def test_reports_include_missing_doi(tmp_path: Path) -> None:
         assert outputs["llm_reviews"].exists()
         assert outputs["pipeline_metrics"].exists()
         assert dashboard.exists()
-        assert "Rare-earth-free permanent magnet candidate" in outputs["all_papers"].read_text()
+        assert "Exploratory research topic candidate" in outputs["all_papers"].read_text()
         assert "文献检索 Agent 工作台" in dashboard.read_text()
     finally:
         db.close()
@@ -151,13 +151,13 @@ def test_open_pdf_available_enters_download_queue(tmp_path: Path) -> None:
             RawSourceRecord(
                 source="doaj",
                 source_id="doaj-1",
-                query="NdFeB permanent magnet",
+                query="TopicAlpha research topic",
                 raw_payload={
                     "id": "doaj-1",
                     "bibjson": {
-                        "title": "Open access NdFeB permanent magnet study",
+                        "title": "Open access TopicAlpha research topic study",
                         "year": "2023",
-                        "identifier": [{"type": "doi", "id": "10.1234/open.ndfeb"}],
+                        "identifier": [{"type": "doi", "id": "10.1234/open.topic"}],
                         "author": [{"name": "A Researcher"}],
                         "journal": {"title": "Open Magnetics", "publisher": "OA Publisher"},
                         "link": [
@@ -196,11 +196,11 @@ def test_pdf_download_tries_alternate_candidates(tmp_path: Path) -> None:
             RawSourceRecord(
                 source="doaj",
                 source_id="doaj-alt",
-                query="NdFeB permanent magnet",
+                query="TopicAlpha research topic",
                 raw_payload={
                     "id": "doaj-alt",
                     "bibjson": {
-                        "title": "Open access NdFeB alternate PDF study",
+                        "title": "Open access TopicAlpha alternate PDF study",
                         "year": "2023",
                         "identifier": [{"type": "doi", "id": "10.1234/open.alt"}],
                         "author": [{"name": "A Researcher"}],

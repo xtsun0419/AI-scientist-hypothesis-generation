@@ -338,7 +338,7 @@ class HtmlDashboardAgent:
     <div class="header-row">
       <div>
         <h1>文献检索 Agent 工作台</h1>
-        <div class="subtle">永磁领域文献发现 · 生成时间 {html.escape(utc_now_iso())}</div>
+        <div class="subtle">跨学科文献发现 · 生成时间 {html.escape(utc_now_iso())}</div>
       </div>
       <div class="subtle">用于架构审阅、检索调整和运行状态检查的静态 HTML 控制面板</div>
     </div>
@@ -375,11 +375,11 @@ class HtmlDashboardAgent:
       <h2>多 Agent 架构图</h2>
       <div class="dag">
         {self._node("OrchestratorAgent", "总调度器：创建 run，控制阶段顺序、失败标记和子 Agent 调用。", "primary")}
-        {self._node("DomainQueryAgent", "领域查询规划：从配置生成永磁领域 QueryPlan。", "")}
+        {self._node("DomainQueryAgent", "领域查询规划：从用户问题和配置生成 QueryPlan。", "")}
         {self._node("SourceDiscoveryAgent", "多源检索：调用数据源 connector，写入原始记录。", "io")}
         {self._node("MetadataNormalizeAgent", "元数据清洗：把不同来源 payload 转成候选文献。", "")}
         {self._node("DeduplicationAgent", "去重合并：优先按 DOI，其次按标题和年份合并。", "")}
-        {self._node("RelevanceJudgeAgent", "相关性判断：用可审计规则给永磁相关性打分。", "check")}
+        {self._node("RelevanceJudgeAgent", "相关性判断：用可审计规则给研究范围相关性打分。", "check")}
         {self._node("OAResolverAgent", "获取状态解析：补 DOI URL、出版商页、OA 状态和 PDF URL。", "check")}
         {self._node("PdfDownloadAgent", "PDF 下载：只下载开放或明确公开的 PDF，并记录哈希。", "io")}
         {self._node("QualityAuditAgent", "质量审计：检查缺 DOI、低相关、PDF 异常等问题。", "check")}
@@ -395,7 +395,7 @@ class HtmlDashboardAgent:
           <div class="relation-items">
             {self._relation_card("OrchestratorAgent", "读取配置，创建 run，按 DAG 调用各 Agent，记录失败与完成状态。")}
             {self._relation_card("CLI 命令", "search / resolve-oa / download / audit / report / dashboard")}
-            {self._relation_card("领域配置", "永磁词表、数据源、年份范围、每个 query 的结果上限。")}
+            {self._relation_card("领域配置", "研究范围、数据源、年份范围、每个 query 的结果上限。")}
             {self._relation_card("运行日志", "当前以终端输出和 SQLite search_runs 为主。")}
             {self._relation_card("断点续跑", "每个阶段都可单独运行，复用 SQLite 中间状态。")}
           </div>
@@ -404,11 +404,11 @@ class HtmlDashboardAgent:
         <div class="relation-band agents">
           <div class="relation-title">Agent 执行层</div>
           <div class="relation-items">
-            {self._relation_card("Query", "生成永磁领域检索式。")}
+            {self._relation_card("Query", "生成研究问题的检索式。")}
             {self._relation_card("Discovery", "连接 OpenAlex、Crossref、Semantic Scholar、arXiv 等来源。")}
             {self._relation_card("Normalize", "统一 DOI、标题、作者、年份、期刊、PDF URL。")}
             {self._relation_card("Dedup", "合并重复文献，保留全部来源证据。")}
-            {self._relation_card("Relevance", "判断是否真的属于永磁领域。")}
+            {self._relation_card("Relevance", "判断是否属于当前研究范围。")}
             {self._relation_card("OA Resolver", "区分开放、非开放、有 DOI、缺 DOI。")}
             {self._relation_card("PDF Download", "只下载开放或明确公开 PDF。")}
             {self._relation_card("Quality Audit", "检查缺 DOI、低相关、PDF 异常。")}
@@ -470,8 +470,8 @@ class HtmlDashboardAgent:
     <section class="grid three">
       <div class="panel">
         <h2>常用命令</h2>
-        <code>python3 run.py search --mode smoke --domain permanent_magnets --from-year 2020 --to-year 2026</code>
-        <code>python3 run.py search --mode pilot --domain permanent_magnets --from-year 1900 --to-year 2026</code>
+        <code>python3 run.py goal create --title "Your research question"</code>
+        <code>python3 run.py round plan --goal-id 1 --target-count 20</code>
         <code>python3 run.py resolve-oa</code>
         <code>python3 run.py review-relevance</code>
         <code>python3 run.py download</code>
@@ -965,7 +965,7 @@ class HtmlDashboardAgent:
 
 
 LABELS = {
-    "permanent_magnets": "永磁领域",
+    "general_research": "通用研究",
     "running": "运行中",
     "finished": "已完成",
     "failed": "失败",

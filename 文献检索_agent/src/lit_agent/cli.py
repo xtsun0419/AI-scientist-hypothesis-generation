@@ -215,7 +215,7 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="lit-agent", description="Permanent magnet literature discovery agent.")
+    parser = argparse.ArgumentParser(prog="lit-agent", description="General-purpose scientific literature discovery agent.")
     parser.add_argument("--db", type=Path, default=default_db_path(), help="SQLite database path.")
     parser.add_argument("--config", type=Path, default=None, help="Domain config path.")
     parser.add_argument("--pdf-dir", type=Path, default=default_pdf_dir(), help="PDF output directory.")
@@ -226,7 +226,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("init", help="Initialize database and output directories.")
 
     search = sub.add_parser("search", help="Run discovery, normalization, deduplication, relevance, and OA resolution.")
-    search.add_argument("--domain", default="permanent_magnets", help="Domain name. v1 supports permanent_magnets.")
+    search.add_argument("--domain", default="general_research", help="Optional label for the current research scope.")
     search.add_argument("--from-year", type=int, default=None)
     search.add_argument("--to-year", type=int, default=None)
     search.add_argument("--sources", default=None, help="Comma-separated source names.")
@@ -268,7 +268,7 @@ def build_parser() -> argparse.ArgumentParser:
     goal_create = goal_sub.add_parser("create", help="Create a scientific goal.")
     goal_create.add_argument("--title", required=True)
     goal_create.add_argument("--description", default=None)
-    goal_create.add_argument("--domain", default="permanent_magnets")
+    goal_create.add_argument("--domain", default="general_research")
     goal_create.add_argument("--target-count", type=int, default=20)
     goal_sub.add_parser("list", help="List scientific goals.")
 

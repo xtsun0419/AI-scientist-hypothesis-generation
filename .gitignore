@@ -32,9 +32,12 @@ env/
 *.sqlite
 *.sqlite3
 *.db
+文献分析_agent/data/
+04_提出路线/data/route_candidates.json
 **/data/pdfs/
 **/data/goal_pdfs/
 **/data/manual_pdfs/
+文献检索_agent/reports/
 
 # Generated render / report artifacts
 REPORT/render_qa_chapter/

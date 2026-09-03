@@ -15,7 +15,7 @@ from docx.shared import Cm, Inches, Pt, RGBColor
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT_DIR = ROOT / "REPORT"
-OUT_PATH = REPORT_DIR / "永磁材料AI_Scientist智能体系统_章稿初稿.docx"
+OUT_PATH = REPORT_DIR / "AI_Scientist智能体系统_章稿初稿.docx"
 DB_PATH = ROOT / "文献检索_agent" / "data" / "literature.sqlite"
 INDEX_STATUS_PATH = ROOT / "文献分析_agent" / "data" / "index" / "index_status.json"
 ROUTE_PATH = ROOT / "04_提出路线" / "data" / "route_candidates.json"
@@ -199,7 +199,7 @@ def add_running_header_footer(doc: Document) -> None:
     header_p = section.header.paragraphs[0]
     header_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     header_p.paragraph_format.space_after = Pt(0)
-    run = header_p.add_run("基于多智能体的永磁材料文献知识挖掘与研究路线生成系统")
+    run = header_p.add_run("基于多智能体的跨学科文献知识挖掘与研究路线生成系统")
     set_run_font(run, size=9, color=MUTED, east_asia="宋体")
 
     footer_p = section.footer.paragraphs[0]
@@ -229,7 +229,7 @@ def add_title(doc: Document) -> None:
     p.paragraph_format.first_line_indent = Pt(0)
     p.paragraph_format.space_before = Pt(10)
     p.paragraph_format.space_after = Pt(14)
-    run = p.add_run("第四章 基于多智能体的永磁材料文献知识挖掘与研究路线生成系统")
+    run = p.add_run("第四章 基于多智能体的跨学科文献知识挖掘与研究路线生成系统")
     set_run_font(run, size=18, bold=True, color=RGBColor(0, 0, 0), east_asia="黑体")
 
 
@@ -283,30 +283,28 @@ def section_41(doc: Document) -> None:
     h1(doc, "4.1 研究背景")
     para(
         doc,
-        "高性能永磁材料是新能源装备、电驱交通、风力发电、机器人和精密执行器等系统中的关键功能材料。"
-        "围绕 NdFeB、SmCo、铁氧体、稀土减量永磁体以及稀土自由候选体系，研究者需要同时处理成分、晶体结构、"
-        "晶粒取向、晶界相、缺陷类型、热稳定性和宏观磁性能之间的多尺度关联。对于“永磁体里 Fe 原子什么环境下磁矩最大”"
-        "这类科学问题，单一文献往往只能给出局部证据，真正可用于研究决策的答案需要跨论文比较材料体系、计算模型、"
-        "实验条件与性能指标。"
+        "不同学科的研究问题都可能涉及理论机制、实验条件、数据方法和结果指标之间的多尺度关联。"
+        "对于“某个关键变量如何影响目标结果”这类科学问题，单一文献往往只能给出局部证据，真正可用于研究决策的答案需要跨论文比较"
+        "研究对象、计算模型、实验条件与评价指标。"
     )
     para(
         doc,
         "传统文献调研主要依赖研究者手工检索、阅读和摘录。该方式在小范围主题上具有较高可信度，但面对持续增长的论文数量、"
         "异构数据库来源以及 PDF 正文、图表、补充信息混杂的证据形态时，容易出现覆盖不足、证据链断裂和更新滞后的问题。"
-        "此外，永磁材料研究中的关键知识并不总是以结构化表格出现，许多重要信息存在于机理讨论、模型假设、边界条件和负面结论之中。"
-        "因此，构建一个能够将文献获取、证据组织、科学问题归纳和研究路线生成连接起来的智能体系统，是提高材料研究效率的重要方向。"
+        "此外，研究中的关键知识并不总是以结构化表格出现，许多重要信息存在于机理讨论、模型假设、边界条件和负面结论之中。"
+        "因此，构建一个能够将文献获取、证据组织、科学问题归纳和研究路线生成连接起来的智能体系统，是提高科研效率的重要方向。"
     )
     para(
         doc,
-        "本章围绕当前搭建的 AI Scientist 原型系统，介绍一个面向永磁材料研究的多智能体工作流。该系统并不试图用大语言模型直接替代研究者判断，"
+        "本章围绕当前搭建的 AI Scientist 原型系统，介绍一个面向跨学科研究的多智能体工作流。该系统并不试图用大语言模型直接替代研究者判断，"
         "而是将确定性的数据入库、去重、状态流转、RAG 索引和报表统计作为基础，将大语言模型限定在查询扩展、边界复核、候选重排、"
         "问题归纳和路线草拟等辅助环节中。通过这种设计，系统既能够利用语言模型的语义组织能力，又保留对文献来源、PDF 可得性、"
         "证据编号和运行状态的可追溯控制。"
     )
     para(
         doc,
-        "本章的写作重点是系统开发与初步应用验证，而非完整的永磁材料物理机制研究。换言之，本章关注的是如何把分散文献转化为可检索、"
-        "可追踪、可讨论并能继续进入路线设计的研究上下文；至于具体候选材料或 Fe 局域磁矩机制的最终结论，仍需要后续更大规模语料、"
+        "本章的写作重点是系统开发与初步应用验证，而非某一具体学科的完整机制研究。换言之，本章关注的是如何把分散文献转化为可检索、"
+        "可追踪、可讨论并能继续进入路线设计的研究上下文；至于具体研究对象与机制的最终结论，仍需要后续更大规模语料、"
         "更精细的计算验证和实验反馈来支撑。"
     )
 
@@ -380,7 +378,7 @@ def section_43(doc: Document, stats: dict) -> None:
     h1(doc, "4.3 文献检索与语料构建 Agent")
     para(
         doc,
-        "文献检索 Agent 是系统的入口模块，目标是围绕给定永磁材料科学问题构建可复现的文献语料库。"
+        "文献检索 Agent 是系统的入口模块，目标是围绕给定科学问题构建可复现的文献语料库。"
         "该模块采用单进程多 Agent 的 CLI 与网页原型，内部由领域查询规划、数据源发现、元数据清洗、去重、相关性判断、"
         "开放获取解析、PDF 下载、质量审计、报表导出和 HTML 仪表盘等子 Agent 组成。其设计重点不是一次性得到最终答案，"
         "而是支持按轮次、小批量、可回溯地扩展文献集合。"
@@ -389,8 +387,7 @@ def section_43(doc: Document, stats: dict) -> None:
     para(
         doc,
         "在查询规划阶段，系统根据科学问题和领域配置生成一组检索 query，并可选择 smoke、pilot 和 full 等不同规模。"
-        "对于永磁材料任务，查询通常围绕 permanent magnets、NdFeB、rare-earth-reduced、rare-earth-free、FeNi、MnAl、ferrite、"
-        "coercivity、anisotropy、magnetization 等主题展开。SourceDiscoveryAgent 负责从外部数据源召回候选记录，"
+        "查询词由研究者给出的研究对象、关键变量、方法和目标指标生成。SourceDiscoveryAgent 负责从外部数据源召回候选记录，"
         "并把数据源失败、限流、超时和 HTTP 错误分类写入 source_failures，便于后续审计覆盖率。"
     )
     para(
@@ -452,24 +449,20 @@ def section_44(doc: Document, stats: dict, index_status: dict) -> None:
     para(
         doc,
         "从研究用途看，RAG 层承担的是“可回溯检索”而不是最终结论生成。科学问题归纳或路线生成时，系统可以先基于关键词或语义相似度找到相关文本块，"
-        "再将 evidence id、材料标签、方法标签和性能指标交给上层 Agent 组织回答。这样可以减少语言模型脱离原文证据自由发挥的风险。"
+        "再将 evidence id、主题标签、方法标签和结果指标交给上层 Agent 组织回答。这样可以减少语言模型脱离原文证据自由发挥的风险。"
     )
     h2(doc, "4.4.2 Paper Cards、知识图谱与 Wiki")
     para(
         doc,
-        "PaperCardAgent 将单篇论文压缩为研究对象、材料体系、方法、性能、结论、局限和 evidence ids 等字段。以当前已生成的样例卡片为例，"
-        "论文 Computational design of rare-earth reduced permanent magnets 被识别出 NdFeB、rare-earth-reduced permanent magnets、"
-        "rare-earth-free permanent magnets、FeNi、MnAl 和 ferrite 等材料标签，以及 micromagnetic simulation、first-principles calculation、"
-        "machine learning optimization 等方法标签。该卡片还提取了 coercivity、energy product、magnetization 和 anisotropy 等性能指标，"
-        "并保留 p:32:p00008 等证据编号。"
+        "PaperCardAgent 将单篇论文压缩为研究对象、主题实体、方法、结果指标、结论、局限和 evidence ids 等字段。"
+        "主题标签由论文标题、摘要和正文自动抽取，方法标签和可量化结果则用于建立可追溯的证据关联。"
     )
     para(
         doc,
         "KnowledgeGraphAgent 在 Paper Cards 基础上生成轻量知识图谱，节点类型包括 wiki_topic、paper、claim、material、method、property 和 evidence。"
         "当前系统已生成 "
         f"{stats['knowledge_nodes']} 个节点和 {stats['knowledge_edges']} 条边。WikiAgent 再围绕 topic 生成 Markdown/JSON 条目，"
-        f"当前已有 {stats['wiki_pages']} 个 Wiki 条目，覆盖 anisotropy、coercivity、energy product、FeNi、ferrite、NdFeB、"
-        "rare-earth-free permanent magnets、rare-earth-reduced permanent magnets、first-principles calculation、micromagnetic simulation 等主题。"
+        f"当前已有 {stats['wiki_pages']} 个 Wiki 条目，覆盖当前语料中抽取出的研究实体、方法和结果指标。"
     )
     add_table(
         doc,
@@ -486,7 +479,7 @@ def section_44(doc: Document, stats: dict, index_status: dict) -> None:
     para(
         doc,
         "需要强调的是，当前分析模块仍处于样例贯通阶段。虽然数据库表和文件结构已经支持从 PDF 到 RAG、Paper Card、图谱和 Wiki 的端到端流程，"
-        "但已完成深度解析的论文数量还较少，无法代表永磁材料领域的完整知识覆盖。后续工作应扩大 PDF 解析规模，增加 OCR 与图表解析，"
+        "但已完成深度解析的论文数量还较少，无法代表任何研究领域的完整知识覆盖。后续工作应扩大 PDF 解析规模，增加 OCR 与图表解析，"
         "并引入人工抽样复核来评估 Paper Cards 和 Wiki 条目的准确率。"
     )
 
@@ -501,9 +494,9 @@ def section_45(doc: Document, route_summary: dict) -> None:
     )
     para(
         doc,
-        "在当前样例中，研究者提出的问题是“永磁体里 Fe 原子什么环境下磁矩最大”。该问题本身包含材料环境、局域结构、磁矩计算或测量方法、"
-        "以及可验证指标等多个未展开维度。科学问题归纳 Agent 的作用不是直接给出单一答案，而是引导研究者明确材料边界、目标性能和验证手段，"
-        "例如将问题改写为“在给定 Fe 富集永磁候选体系中，哪些局域配位、晶格畸变或合金化环境能够提升 Fe 局域磁矩，并如何通过第一性原理或文献证据验证”。"
+        "在当前样例中，研究者提出的问题是“关键变量如何通过可验证机制影响目标结果”。该问题本身包含研究对象、局部条件、计算或测量方法、"
+        "以及可验证指标等多个未展开维度。科学问题归纳 Agent 的作用不是直接给出单一答案，而是引导研究者明确研究边界、目标结果和验证手段，"
+        "例如将问题改写为“在给定研究对象中，哪些局部条件或干预因素能够提升目标结果，并如何通过计算、实验或文献证据验证”。"
     )
     h2(doc, "4.5.1 对话式问题收敛")
     para(
@@ -584,14 +577,14 @@ def section_46(doc: Document, stats: dict, index_status: dict, route_summary: di
     h2(doc, "4.6.1 样例问题运行结果")
     para(
         doc,
-        "当前样例问题聚焦“永磁体里 Fe 原子什么环境下磁矩最大”。路线候选模块基于已有 Paper Card 与 Wiki 证据，生成了机制优先、候选体系、"
-        "工艺-微结构和数据驱动等路线。其中，机制优先路线强调先解释变量到性能的因果链，候选体系路线强调在 NdFeB、稀土减量、稀土自由、FeNi、MnAl、"
-        "ferrite 等候选体系中统一指标排序，工艺-微结构路线强调退火、扩散源、晶界连续性和织构等可控变量，数据驱动路线则强调构建小样本可解释排序器。"
+        "当前样例问题聚焦“关键变量如何通过可验证机制影响目标结果”。路线候选模块基于已有 Paper Card 与 Wiki 证据，生成机制优先、"
+        "候选体系、条件优化和数据驱动等路线。其中，机制优先路线强调先解释变量到结果的因果链，候选体系路线强调在可行研究对象中统一指标排序，"
+        "条件优化路线强调可控变量和对照设计，数据驱动路线则强调构建小样本可解释排序器。"
     )
     para(
         doc,
-        "这些路线并不构成材料结论本身，而是把文献证据和研究偏好转化为可执行计划。其价值在于：研究者可以沿着路线进一步选择候选体系、"
-        "设计第一性原理计算或微磁模拟矩阵，或将缺失证据转化为下一轮检索 query。"
+        "这些路线并不构成学科结论本身，而是把文献证据和研究偏好转化为可执行计划。其价值在于：研究者可以沿着路线进一步选择研究对象、"
+        "设计计算、实验或数据分析方案，或将缺失证据转化为下一轮检索 query。"
     )
     h2(doc, "4.6.2 当前局限")
     add_bullets(
@@ -615,7 +608,7 @@ def section_47(doc: Document) -> None:
     h1(doc, "4.7 本章小结")
     para(
         doc,
-        "本章围绕永磁材料研究中文献证据分散、跨尺度知识组织困难和人工归纳效率不足的问题，介绍了一个基于多智能体的 AI Scientist 原型系统。"
+        "本章围绕科研活动中文献证据分散、跨尺度知识组织困难和人工归纳效率不足的问题，介绍了一个基于多智能体的 AI Scientist 原型系统。"
         "该系统以文献检索 Agent 为入口，完成多源召回、元数据规范化、去重、开放获取状态解析、PDF 获取和质量审计；以文献分析 Agent 为知识组织层，"
         "将 PDF 解析为 Markdown/JSON、RAG 索引、Paper Cards、轻量知识图谱和 Wiki；以科学问题归纳 Agent 和研究路线候选 Agent 为交互层，"
         "将检索问题、证据缺口和文献证据转化为可讨论的科学问题和可执行路线草稿。"
@@ -631,7 +624,7 @@ def section_47(doc: Document) -> None:
         "后续工作主要包括四个方面：第一，扩大 PDF 解析规模并补充 OCR、图表和补充信息解析能力；第二，引入人工抽样复核和证据一致性评分，"
         "系统评估 Paper Card、Wiki 和路线候选的准确率；第三，改进 RAG 向量表示与跨文献检索质量，使科学问题归纳能够使用更完整的证据上下文；"
         "第四，将路线候选进一步连接第一性原理计算、微磁模拟或实验设计工具，形成从文献证据到可验证任务的闭环。"
-        "在这些能力完善后，该系统有望成为永磁材料研究中面向文献知识挖掘、科学问题收敛和研究路线设计的可持续智能基础设施。"
+        "在这些能力完善后，该系统有望成为跨学科研究中面向文献知识挖掘、科学问题收敛和研究路线设计的可持续智能基础设施。"
     )
 
 

@@ -1,6 +1,0 @@
-{
-  "documents": 1,
-  "chunks": 44,
-  "embeddings": 44,
-  "embedding_mode": "local_hash_fallback"
-}

@@ -12,7 +12,7 @@ def project_root() -> Path:
 
 
 def default_config_path() -> Path:
-    return project_root() / "configs" / "domain_permanent_magnets.yaml"
+    return project_root() / "configs" / "domain_general_research.yaml"
 
 
 def default_db_path() -> Path:
@@ -67,7 +67,7 @@ def query_plan_from_config(
     deduped_queries = list(dict.fromkeys(query.strip() for query in queries if query.strip()))
     limits = config.get("limits", {})
     return QueryPlan(
-        domain=str(config.get("domain", "permanent_magnets")),
+        domain=str(config.get("domain", "general_research")),
         queries=deduped_queries,
         include_terms=[str(item).lower() for item in config.get("include_terms", [])],
         exclude_terms=[str(item).lower() for item in config.get("exclude_terms", [])],

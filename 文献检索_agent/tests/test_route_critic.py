@@ -35,12 +35,12 @@ def make_run_with_snapshot() -> dict:
             "evidence_pool": ["p:1:e1", "p:1:e2"],
             "graph": {
                 "loaded": True,
-                "matched_entities": [{"id": "material:ndfeb", "label": "NdFeB"}],
+                "matched_entities": [{"id": "entity:topic-alpha", "label": "TopicAlpha"}],
                 "related_nodes": [],
                 "related_evidence_ids": ["p:1:e1"],
                 "gap_candidates": [],
                 "analogy_candidates": [],
-                "constraints": [{"topic": "NdFeB", "limitation": "晶界相薄于阈值时矫顽力骤降"}],
+                "constraints": [{"topic": "TopicAlpha", "limitation": "晶界相薄于阈值时矫顽力骤降"}],
                 "feasibility": {"loaded": True, "known": [], "unknown": []},
             },
             "emphasis": "偏向可验证路线",
@@ -50,7 +50,7 @@ def make_run_with_snapshot() -> dict:
                 "rank": 1,
                 "title": "路线一",
                 "rationale": "机制优先",
-                "candidates": ["NdFeB", "晶界相"],
+                "candidates": ["TopicAlpha", "晶界相"],
                 "variables": ["晶界相厚度"],
                 "validation": ["对比有/无晶界相的性能阈值"],
                 "evidence": ["p:1:e1 支撑该机制", "纯推测内容"],
@@ -109,7 +109,7 @@ def test_fallback_critique_scores_dimensions() -> None:
 def test_fallback_critique_independent_verification_restores_score() -> None:
     """独立检索证据能复现声称引用时，证据分不再被降级（防幻觉传播机制的两向性）。"""
     module = _critic_module()
-    independent = {1: {"queries": ["NdFeB"], "hits": [], "hit_evidence_ids": ["p:1:e1"]}}
+    independent = {1: {"queries": ["TopicAlpha"], "hits": [], "hit_evidence_ids": ["p:1:e1"]}}
     result = module.fallback_critique(make_run_with_snapshot(), independent)
     route1 = result["routes"][0]
     dims = route1["dimensions"]

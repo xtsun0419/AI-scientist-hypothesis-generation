@@ -4,7 +4,7 @@ import json
 
 from lit_agent.db import LiteratureDB
 from lit_agent.llm import LLMSettings, OpenAICompatibleClient
-from lit_agent.models import LLMRelevanceReview
+from lit_agent.models import LLMRelevanceReview, QueryPlan
 
 
 class LLMRelevanceReviewAgent:
@@ -23,7 +23,7 @@ class LLMRelevanceReviewAgent:
         self.low_threshold = low_threshold
         self.high_threshold = high_threshold
 
-    def run(self) -> dict[str, int]:
+    def run(self, plan: QueryPlan | None = None) -> dict[str, int]:
         candidates = self.boundary_candidates()
         if not self.settings:
             for row in candidates:
@@ -46,7 +46,7 @@ class LLMRelevanceReviewAgent:
         failed = 0
         for row in candidates:
             try:
-                response = client.review_relevance(_prompt_for(row))
+                response = client.review_relevance(_prompt_for(row, plan))
                 review = _review_from_response(row["id"], self.settings.model, response)
                 self.db.upsert_llm_relevance_review(review)
                 reviewed += 1
@@ -84,9 +84,15 @@ class LLMRelevanceReviewAgent:
         )
 
 
-def _prompt_for(row) -> str:
+def _prompt_for(row, plan: QueryPlan | None = None) -> str:
+    scope = {
+        "domain": plan.domain if plan else "general_research",
+        "include_terms": plan.include_terms if plan else [],
+        "exclude_terms": plan.exclude_terms if plan else [],
+        "queries": plan.queries[:8] if plan else [],
+    }
     payload = {
-        "domain": "Permanent magnet research, including rare-earth magnets, NdFeB, SmCo, ferrites, AlNiCo, coercivity, remanence, energy product, grain-boundary diffusion, magnetocrystalline anisotropy, processing, recycling, and rare-earth-free permanent magnets.",
+        "research_scope": scope,
         "title": row["title"],
         "abstract": row["abstract"],
         "venue": row["venue"],
@@ -96,7 +102,7 @@ def _prompt_for(row) -> str:
         "rule_relevance_reason": row["relevance_reason"],
     }
     return (
-        "Decide whether this paper should be included in a permanent-magnet literature corpus. "
+        "Decide whether this paper belongs to the configured research scope. "
         "decision must be one of include, exclude, uncertain. confidence must be 0-1. "
         "Use concise reasons and do not invent facts.\n"
         + json.dumps(payload, ensure_ascii=False)

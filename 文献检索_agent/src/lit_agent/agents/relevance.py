@@ -44,5 +44,5 @@ def _reason(matched: list[str], excluded: list[str]) -> str:
     if excluded:
         return "Excluded or down-weighted by terms: " + ", ".join(excluded)
     if matched:
-        return "Matched permanent magnet terms: " + ", ".join(matched[:8])
-    return "No configured permanent magnet term was found; needs manual review."
+        return "Matched configured research terms: " + ", ".join(matched[:8])
+    return "No configured research term was found; needs manual review."

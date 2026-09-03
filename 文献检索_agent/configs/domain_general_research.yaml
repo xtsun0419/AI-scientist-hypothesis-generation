@@ -1,0 +1,20 @@
+# The default configuration is intentionally discipline-neutral. For broad
+# searches, create a scientific goal in the UI or provide a project-specific
+# config file with --config.
+domain: general_research
+display_name: General Research
+from_year: 1900
+to_year: 2026
+sources:
+  - openalex
+  - crossref
+  - semantic_scholar
+  - arxiv
+  - doaj
+  - core
+  - europe_pmc
+queries:
+limits:
+  max_results_per_query: 20
+  request_timeout_seconds: 30
+  polite_delay_seconds: 0.2

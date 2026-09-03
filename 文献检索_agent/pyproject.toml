@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lit-agent"
 version = "0.1.0"
-description = "Multi-agent literature discovery CLI for permanent magnet research."
+description = "General-purpose multi-agent scientific literature discovery CLI."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "AI Scientist Literature Agent" }]

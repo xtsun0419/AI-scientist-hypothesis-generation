@@ -22,7 +22,7 @@ def make_synthetic_graph():
             {"id": "material:B", "type": "material", "label": "Beta"},
             {"id": "method:X", "type": "method", "label": "X-method"},
             {"id": "method:Y", "type": "method", "label": "Y-method"},
-            {"id": "property:P", "type": "property", "label": "coercivity"},
+            {"id": "property:P", "type": "property", "label": "outcome metric"},
         ],
         "edges": [
             {"id": "e1", "source": "paper:1", "target": "material:A", "type": "mentions", "evidence_ids": ["p:1:e1"]},
@@ -60,7 +60,7 @@ def test_analogy_candidates_transfers_method_between_materials() -> None:
     assert target
     assert target[0]["method"] == "Y-method"
     assert target[0]["source_material"] == "Alpha"
-    assert target[0]["shared_property"] == "coercivity"
+    assert target[0]["shared_property"] == "outcome metric"
 
 
 def test_graph_novelty_uses_path_distances() -> None:
@@ -90,11 +90,11 @@ def test_graph_novelty_on_empty_graph() -> None:
 def test_graph_context_collects_neighbor_evidence() -> None:
     module = _graph_module()
     graph = make_synthetic_graph()
-    question = {"title": "Alpha 的 coercivity 问题", "description": "", "variables": [], "candidates": []}
+    question = {"title": "Alpha 的 outcome metric 问题", "description": "", "variables": [], "candidates": []}
     context = module.graph_context(graph, question)
     assert context["loaded"]
     matched_labels = {item["label"] for item in context["matched_entities"]}
     assert "Alpha" in matched_labels
-    assert "coercivity" in matched_labels
+    assert "outcome metric" in matched_labels
     # 邻居边上的证据应被收集
     assert any("p:1:e" in eid or "p:2:e" in eid for eid in context["evidence_ids"])

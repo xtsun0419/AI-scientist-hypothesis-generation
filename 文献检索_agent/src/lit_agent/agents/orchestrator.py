@@ -6,6 +6,7 @@ from pathlib import Path
 from lit_agent.analysis_bridge import convert_pdfs_with_analysis_agent
 from lit_agent.config import default_db_path, default_parsed_dir, default_pdf_dir, default_report_dir
 from lit_agent.db import LiteratureDB
+from lit_agent.researcher_library_bridge import researcher_library_sync
 
 from .dashboard import HtmlDashboardAgent
 from .dedup import DeduplicationAgent
@@ -106,6 +107,7 @@ class OrchestratorAgent:
                 llm_stats = LLMRelevanceReviewAgent(db).run(plan) if llm_review else {"reviewed": 0}
                 self.record_metrics(db, run_id)
                 db.finish_search_run(run_id, "finished")
+                researcher_library_sync(self.db_path)
             except Exception:
                 db.finish_search_run(run_id, "failed")
                 raise
@@ -268,13 +270,15 @@ class OrchestratorAgent:
         db = LiteratureDB(self.db_path)
         try:
             db.init_schema()
-            return RoundPlanningAgent(db).plan(
+            result = RoundPlanningAgent(db).plan(
                 goal_id=goal_id,
                 target_count=target_count,
                 max_results_per_query=max_results_per_query,
                 query_limit=query_limit,
                 sources=sources,
             )
+            researcher_library_sync(self.db_path)
+            return result
         finally:
             db.close()
 

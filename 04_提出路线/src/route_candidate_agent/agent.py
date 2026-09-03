@@ -427,8 +427,16 @@ def collect_context() -> dict[str, Any]:
     question_options = merge_question_options(retrieval_context, question_context, confirmed_options)
     selected = select_question(question_options, None)
     graph = load_knowledge_graph()
+    library = _researcher_library_context()
+    if library.get("enabled"):
+        question_context["paper_cards"] = list(library.get("cards") or []) + list(question_context.get("paper_cards") or [])
+        question_context["metrics"] = {
+            **dict(question_context.get("metrics") or {}),
+            "researcher_library_items": int((library.get("metrics") or {}).get("total") or 0),
+        }
     context = {
         **question_context,
+        "researcher_library": {"enabled": bool(library.get("enabled")), "metrics": dict(library.get("metrics") or {})},
         "question_options": question_options,
         "confirmed_questions": confirmed_options,
         "graph": {
@@ -447,6 +455,24 @@ def collect_context() -> dict[str, Any]:
         },
     }
     return context
+
+
+def _researcher_library_context() -> dict[str, Any]:
+    src_dir = Path(__file__).resolve().parents[3] / "05_研究者反馈_agents" / "src"
+    if not src_dir.exists():
+        return {"enabled": False, "cards": [], "metrics": {}}
+    if str(src_dir) not in sys.path:
+        sys.path.insert(0, str(src_dir))
+    try:
+        from researcher_library_agent.agent import ResearcherLibraryAgent
+
+        agent = ResearcherLibraryAgent()
+        try:
+            return agent.design_context()
+        finally:
+            agent.close()
+    except Exception:
+        return {"enabled": False, "cards": [], "metrics": {}}
 
 
 def _question_synthesis_context() -> dict[str, Any]:

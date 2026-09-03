@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import json
 import os
+import ast
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -35,6 +36,16 @@ from .question_synthesis_bridge import (
     question_synthesis_data_dir,
     question_synthesis_reset,
     question_synthesis_state,
+)
+from .researcher_library_bridge import (
+    researcher_library_agent_dir,
+    researcher_library_ask,
+    researcher_library_import_path,
+    researcher_library_import_pubmed,
+    researcher_library_run_hypothesis_dialogue,
+    researcher_library_set_enabled,
+    researcher_library_state,
+    researcher_library_sync,
 )
 from .route_candidate_bridge import (
     route_candidate_agent_dir,
@@ -80,6 +91,15 @@ AI_WORKFLOW_MODULES = [
         "status": "已接入",
         "summary": "从科学问题与归纳方向生成多条可行路线，整理候选体系、变量空间、验证方式和优先级。",
         "metrics": ("路线", "候选", "变量"),
+        "enabled": True,
+    },
+    {
+        "path": "/researcher-library",
+        "stage": "R",
+        "title": "研究者文献库",
+        "status": "已接入",
+        "summary": "保存个人已有文献并同步 AI 检索结果，以可选方式模拟研究者提问。",
+        "metrics": ("个人", "AI", "提问"),
         "enabled": True,
     },
     {
@@ -160,6 +180,14 @@ class V3WebHandler(BaseHTTPRequestHandler):
                     message=self._query_param("message"),
                     error=self._query_param("error"),
                     selected_question_id=_int(self._query_param("question_id"), None),
+                )
+            )
+            return
+        if path == "/researcher-library":
+            self._send_html(
+                render_researcher_library(
+                    message=self._query_param("message"),
+                    error=self._query_param("error"),
                 )
             )
             return
@@ -270,6 +298,31 @@ class V3WebHandler(BaseHTTPRequestHandler):
                     )
                 )
                 return
+            if action == "/researcher-library/settings":
+                researcher_library_set_enabled(fields.get("enabled") == "1")
+                self._redirect(_researcher_library_message_location("研究者模拟设置已更新。"))
+                return
+            if action == "/researcher-library/import":
+                result = researcher_library_import_path(_required(fields, "path"))
+                self._redirect(_researcher_library_message_location(f"已导入 {result['imported']} 篇个人文献。"))
+                return
+            if action == "/researcher-library/sync":
+                result = researcher_library_sync(default_db_path())
+                self._redirect(_researcher_library_message_location(f"已同步 {result['synced']} 篇 AI 检索文献。"))
+                return
+            if action == "/researcher-library/pubmed":
+                ids = [item.strip() for item in _required(fields, "ids").replace(",", "\n").splitlines() if item.strip()]
+                result = researcher_library_import_pubmed(ids, email=fields.get("email") or None)
+                self._redirect(_researcher_library_message_location(f"PubMed 已导入 {result['imported']}/{result['requested']} 篇文献。"))
+                return
+            if action == "/researcher-library/ask":
+                result = researcher_library_ask()
+                self._redirect(_researcher_library_message_location(f"已生成研究者提问 #{result['id']}。"))
+                return
+            if action == "/researcher-library/dialogue":
+                result = researcher_library_run_hypothesis_dialogue()
+                self._redirect(_researcher_library_message_location(f"自动对话完成，已生成假设 #{result['id']}。"))
+                return
             if action == "/route-candidates/generate":
                 result = route_candidate_generate(
                     question_id=_int(fields.get("question_id"), None),
@@ -320,6 +373,9 @@ class V3WebHandler(BaseHTTPRequestHandler):
                 return
             if action.startswith("/route-candidates/"):
                 self._redirect(_route_candidates_message_location(_friendly_error(str(exc)), error=True))
+                return
+            if action.startswith("/researcher-library/"):
+                self._redirect(_researcher_library_message_location(_friendly_error(str(exc)), error=True))
                 return
             self._send_html(render_home(error=_friendly_error(str(exc))))
             return
@@ -514,6 +570,7 @@ def render_route_candidates(
         state_error = _friendly_error(str(exc))
     metrics = state.get("metrics", {})
     context = state.get("context", {})
+    researcher_library = context.get("researcher_library") or {}
     graph_block = context.get("graph", {})
     graph_stats = graph_block.get("stats", {})
     selected = state.get("selected_question") or {}
@@ -565,6 +622,7 @@ def render_route_candidates(
         <div class="status-line">
           <span class="badge badge-teal">已接入</span>
           <span class="badge {'badge-blue' if llm_configured else 'badge-amber'}">LLM：{html.escape(str(model_name))}</span>
+          <span class="badge {'badge-teal' if researcher_library.get('enabled') else 'badge-neutral'}">研究者库：{html.escape(str((researcher_library.get('metrics') or {}).get('total', 0)))}</span>
           <span class="subtle">模块：{html.escape(str(route_candidate_agent_dir()))}</span>
         </div>
       </div>
@@ -1106,6 +1164,191 @@ def _empty_route_candidate_state() -> dict[str, Any]:
         "llm_configured": False,
         "output_path": str(route_candidate_data_dir() / "route_candidates.json"),
     }
+
+
+def render_researcher_library(*, message: str | None = None, error: str | None = None) -> str:
+    try:
+        state = researcher_library_state()
+        state_error = None
+    except Exception as exc:
+        state = {"enabled": False, "metrics": {}, "items": [], "questions": [], "hypotheses": []}
+        state_error = _friendly_error(str(exc))
+    metrics = state.get("metrics") or {}
+    enabled = bool(state.get("enabled"))
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>研究者文献库 · AI Scientist</title>
+  <style>{base_css()}{researcher_library_css()}</style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div>
+        <div class="brand-kicker">Researcher Library · Isolated Context</div>
+        <h1>研究者文献库</h1>
+        <div class="status-line">
+          <span class="badge {'badge-teal' if enabled else 'badge-amber'}">{'已启用' if enabled else '未启用'}</span>
+          <span class="subtle">模块：{html.escape(str(researcher_library_agent_dir()))}</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a class="button secondary" href="/">返回首页</a>
+        <a class="button secondary" href="/question-synthesis">科学问题归纳</a>
+        <a class="button secondary" href="/route-candidates">提出路线</a>
+      </div>
+    </div>
+  </header>
+  <main class="library-shell">
+    {notice(message, 'ok') if message else ''}
+    {notice(error or state_error, 'err') if (error or state_error) else ''}
+    <section class="full hero-strip library-hero">
+      <div>
+        <div class="brand-kicker">Personal + Agent Literature</div>
+        <h2>更新后文献库</h2>
+      </div>
+      <div class="hero-counters">
+        <span><b>{metrics.get('personal', 0)}</b> personal</span>
+        <span><b>{metrics.get('agent', 0)}</b> agent</span>
+        <span><b>{metrics.get('questions', 0)}</b> questions</span>
+      </div>
+    </section>
+    <section class="full metrics">
+      {metric_card('文献总数', metrics.get('total', 0))}
+      {metric_card('个人文献', metrics.get('personal', 0))}
+      {metric_card('AI 同步', metrics.get('agent', 0))}
+      {metric_card('研究者提问', metrics.get('questions', 0))}
+      {metric_card('最终假设', metrics.get('hypotheses', 0))}
+    </section>
+    <section class="library-workspace">
+      <aside class="stack">
+        <section class="panel">
+          <div class="panel-head"><h2>模拟设置</h2></div>
+          <form method="post" action="/researcher-library/settings" class="toggle-form">
+            <label class="switch-label"><input type="checkbox" name="enabled" value="1" {'checked' if enabled else ''}><span>启用模拟研究者</span></label>
+            <button type="submit">更新</button>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>导入个人文献</h2></div>
+          <form method="post" action="/researcher-library/import">
+            <label>文件或目录路径</label>
+            <input name="path" required placeholder="/Users/.../papers">
+            <button type="submit">导入</button>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>同步 AI 文献</h2></div>
+          <form method="post" action="/researcher-library/sync"><button type="submit">同步</button></form>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>PubMed 抓取</h2></div>
+          <form method="post" action="/researcher-library/pubmed">
+            <label>PMID / PMCID / DOI</label>
+            <textarea name="ids" required placeholder="每行一个标识符"></textarea>
+            <label>联系邮箱</label>
+            <input name="email" type="email" placeholder="可选">
+            <button type="submit">抓取并入库</button>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>模拟研究者</h2></div>
+          <form method="post" action="/researcher-library/ask"><button type="submit" {'disabled' if not enabled else ''}>生成提问</button></form>
+          <form method="post" action="/researcher-library/dialogue"><button class="secondary" type="submit" {'disabled' if not enabled else ''}>自动对话并生成假设</button></form>
+        </section>
+      </aside>
+      <section class="stack">
+        <section class="panel">
+          <div class="panel-head"><h2>研究者提问</h2><span class="badge badge-blue">隔离会话</span></div>
+          {researcher_question_list(state.get('questions') or [])}
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>最终假设</h2><span class="badge badge-teal">公开消息</span></div>
+          {researcher_hypothesis_list(state.get('hypotheses') or [])}
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>文献条目</h2><span class="subtle">{metrics.get('total', 0)} 条</span></div>
+          {researcher_library_items(state.get('items') or [])}
+        </section>
+      </section>
+    </section>
+  </main>
+</body>
+</html>"""
+
+
+def researcher_question_list(questions: list[dict[str, Any]]) -> str:
+    if not questions:
+        return '<div class="subtle">暂无提问</div>'
+    return "".join(
+        '<article class="researcher-question">'
+        f'<h3>{html.escape(str(item.get("question") or ""))}</h3>'
+        f'<p>{html.escape(str(item.get("rationale") or ""))}</p>'
+        f'<span class="subtle">#{html.escape(str(item.get("id") or ""))} · {html.escape(str(item.get("mode") or ""))}</span>'
+        '</article>'
+        for item in questions
+    )
+
+
+def researcher_library_items(items: list[dict[str, Any]]) -> str:
+    if not items:
+        return '<div class="subtle">暂无文献条目</div>'
+    return "".join(
+        '<article class="library-item">'
+        f'<div><span class="badge {"badge-teal" if item.get("source_type") == "personal" else "badge-blue"}">{html.escape(str(item.get("source_type") or ""))}</span>'
+        f'<h3>{html.escape(str(item.get("title") or ""))}</h3></div>'
+        f'<p>{html.escape(str(item.get("abstract") or ""))}</p>'
+        '</article>'
+        for item in items
+    )
+
+
+def researcher_hypothesis_list(hypotheses: list[dict[str, Any]]) -> str:
+    if not hypotheses:
+        return '<div class="subtle">暂无最终假设</div>'
+    return "".join(
+        '<article class="researcher-hypothesis">'
+        f'<h3>{html.escape(str(item.get("hypothesis") or ""))}</h3>'
+        f'<p><b>提问：</b>{html.escape(str(item.get("researcher_question") or ""))}</p>'
+        f'<p><b>验证：</b>{html.escape(_structured_display(item.get("validation")))}</p>'
+        f'<span class="subtle">#{html.escape(str(item.get("id") or ""))} · {html.escape(str(item.get("mode") or ""))}</span>'
+        '</article>'
+        for item in hypotheses
+    )
+
+
+def _structured_display(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    try:
+        parsed = ast.literal_eval(text)
+    except (SyntaxError, ValueError):
+        return text
+    if isinstance(parsed, dict):
+        return "\n".join(f"{key}：{_structured_display(item)}" for key, item in parsed.items())
+    if isinstance(parsed, list):
+        return "；".join(_structured_display(item) for item in parsed)
+    return str(parsed)
+
+
+def researcher_library_css() -> str:
+    return """
+    .library-shell { --stage:#0f766e; --stage-deep:#115e59; --stage-soft:#f0fdfa; display:grid; gap:12px; margin:0 auto; max-width:1440px; padding:14px 18px 42px; }
+    .library-hero { background:linear-gradient(135deg,#0f172a,#134e4a 58%,#0f766e); border-color:#0f766e; min-height:92px; padding:15px 17px; }
+    .library-workspace { display:grid; gap:12px; grid-template-columns:minmax(250px,.7fr) minmax(0,1.5fr); }
+    .toggle-form { align-items:center; display:flex; flex-wrap:wrap; gap:10px; }
+    .switch-label { align-items:center; display:flex; gap:8px; margin:0; }
+    .switch-label input { accent-color:#0f766e; height:18px; width:18px; }
+    .researcher-question, .researcher-hypothesis, .library-item { border-bottom:1px solid var(--line); display:grid; gap:6px; padding:10px 0; }
+    .researcher-question:last-child, .researcher-hypothesis:last-child, .library-item:last-child { border-bottom:0; }
+    .researcher-question h3, .researcher-hypothesis h3, .library-item h3 { color:var(--ink); font-size:14px; line-height:1.45; margin:0; text-transform:none; }
+    .researcher-question p, .researcher-hypothesis p, .library-item p { color:var(--muted); line-height:1.5; margin:0; white-space:pre-wrap; }
+    .library-item > div { align-items:center; display:flex; flex-wrap:wrap; gap:8px; }
+    @media (max-width:900px) { .library-workspace { grid-template-columns:1fr; } }
+    """
 
 
 def render_question_synthesis(*, message: str | None = None, error: str | None = None) -> str:
@@ -3441,6 +3684,11 @@ def _paper_analysis_message_location(message: str, *, error: bool = False) -> st
 def _question_synthesis_message_location(message: str, *, error: bool = False) -> str:
     key = "error" if error else "message"
     return "/question-synthesis?" + key + "=" + urllib.parse.quote(message)
+
+
+def _researcher_library_message_location(message: str, *, error: bool = False) -> str:
+    key = "error" if error else "message"
+    return "/researcher-library?" + key + "=" + urllib.parse.quote(message)
 
 
 def _route_candidates_message_location(

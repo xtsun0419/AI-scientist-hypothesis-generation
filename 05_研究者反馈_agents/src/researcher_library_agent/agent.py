@@ -8,8 +8,10 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from .config import default_db_path, default_retrieval_db_path
+from .config import default_db_path, default_memory_path, default_retrieval_db_path
 from .db import ResearcherLibraryDB
+from .hypothesis_critic import assess_hypothesis
+from .memory import read_memory, rebuild_memory
 from .pubmed import fetch_pubmed_records
 
 
@@ -19,9 +21,11 @@ SUPPORTED_SUFFIXES = {".pdf", ".txt", ".md", ".json"}
 class ResearcherLibraryAgent:
     """Maintains a provenance-preserving library for optional researcher simulation."""
 
-    def __init__(self, db: ResearcherLibraryDB | None = None):
+    def __init__(self, db: ResearcherLibraryDB | None = None, *, memory_path: Path | None = None):
         self.db = db or ResearcherLibraryDB(default_db_path())
+        self.memory_path = memory_path or default_memory_path()
         self.db.init_schema()
+        self._refresh_memory()
 
     def close(self) -> None:
         self.db.close()
@@ -33,6 +37,9 @@ class ResearcherLibraryAgent:
             "items": self.db.recent_items(20),
             "questions": self.db.recent_questions(),
             "hypotheses": self.db.recent_hypotheses(),
+            "reviews": self.db.recent_hypothesis_reviews(),
+            "memory": read_memory(self.memory_path),
+            "memory_path": str(self.memory_path),
         }
 
     def set_enabled(self, enabled: bool) -> dict[str, Any]:
@@ -93,14 +100,14 @@ class ResearcherLibraryAgent:
             )
         return {"requested": len(ids), "imported": len(records)}
 
-    def ask_researcher_question(self) -> dict[str, Any]:
+    def ask_researcher_question(self, *, memory: str | None = None) -> dict[str, Any]:
         if not self.db.get_setting("enabled"):
             raise ValueError("研究者模拟功能尚未启用。")
         items = self.db.recent_items(24)
         if not items:
             raise ValueError("更新后文献库为空，请先导入个人文献或同步检索结果。")
         item_ids = [int(item["id"]) for item in items]
-        answer, mode = _ask_llm(_library_snapshot(items))
+        answer, mode = _ask_llm(_library_snapshot(items, memory=memory if memory is not None else read_memory(self.memory_path)))
         question = str(answer.get("question") or "当前证据中，哪项关键假设最需要通过可比较的验证来区分？").strip()
         rationale = str(answer.get("rationale") or "该问题基于文献库中的研究对象、方法和结果差异生成。")
         cited = [int(item) for item in answer.get("item_ids", []) if str(item).isdigit() and int(item) in item_ids]
@@ -115,8 +122,12 @@ class ResearcherLibraryAgent:
         items = self.db.recent_items(24)
         if len(items) < 2:
             raise ValueError("请至少准备 1 篇个人文献和 1 篇 AI 文献后再运行自动对话。")
-        question_run = self.ask_researcher_question()
-        payload = {"library": _library_snapshot(items), "published_researcher_question": question_run["question"]}
+        memory = read_memory(self.memory_path)
+        question_run = self.ask_researcher_question(memory=memory)
+        payload = {
+            "library": _library_snapshot(items, memory=memory),
+            "published_researcher_question": question_run["question"],
+        }
         answer, mode = _design_hypothesis(payload)
         hypothesis = str(answer.get("hypothesis") or "待验证假设：文献库中反复出现的关键变量与目标结果之间存在可检验的因果关系。").strip()
         rationale = _structured_text(answer.get("rationale")) or "该假设仅基于更新后文献库中的证据摘要和公开提问生成。"
@@ -130,14 +141,36 @@ class ResearcherLibraryAgent:
             item_ids=item_ids,
             mode=f"researcher:{question_run['mode']};designer:{mode}",
         )
-        return {
+        public_run = {
+            "id": run_id,
+            "researcher_question": question_run["question"],
+            "hypothesis": hypothesis,
+            "validation": validation,
+        }
+        assessment = assess_hypothesis(public_run, self.db.recent_hypotheses(3), items)
+        status = _watchdog_status(assessment["issue"], self.db.recent_hypothesis_reviews(2))
+        self.db.add_hypothesis_review(
+            run_id=run_id,
+            status=status,
+            issue=assessment["issue"],
+            rationale=assessment["rationale"],
+            restart_instruction=assessment["restart_instruction"] if status == "interrupt" else None,
+            evidence_ids=assessment["evidence_ids"],
+        )
+        self._refresh_memory()
+        result = {
             "id": run_id,
             "researcher_question": question_run["question"],
             "hypothesis": hypothesis,
             "rationale": rationale,
             "validation": validation,
             "mode": f"researcher:{question_run['mode']};designer:{mode}",
+            "watchdog": {"status": status, **assessment},
         }
+        if status == "interrupt":
+            result["rethink"] = self._rethink_after_interrupt(items, question_run["question"], assessment["restart_instruction"])
+            self._refresh_memory()
+        return result
 
     def design_context(self) -> dict[str, Any]:
         """Only exposes evidence records, never simulated questions or workflow conversations."""
@@ -162,6 +195,43 @@ class ResearcherLibraryAgent:
                 }
             )
         return {"enabled": True, "cards": cards, "metrics": self.db.metrics()}
+
+    def _refresh_memory(self) -> str:
+        runs = self.db.recent_hypotheses()
+        item_ids = []
+        for run in runs:
+            try:
+                item_ids.extend(int(item) for item in json.loads(run.get("item_ids_json") or "[]"))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                continue
+        return rebuild_memory(
+            self.memory_path,
+            runs,
+            self.db.items_by_ids(list(dict.fromkeys(item_ids))),
+            self.db.review_for_runs([int(run["id"]) for run in runs]),
+        )
+
+    def _rethink_after_interrupt(self, items: list[dict[str, Any]], question: str, restart_instruction: str) -> dict[str, Any]:
+        answer, mode = _design_hypothesis(
+            {
+                "library": _library_snapshot(items, memory=read_memory(self.memory_path)),
+                "published_researcher_question": question,
+                "published_watchdog_instruction": restart_instruction,
+            }
+        )
+        hypothesis = str(answer.get("hypothesis") or "待验证假设：应从独立文献证据重新选择研究变量和可证伪机制。").strip()
+        rationale = _structured_text(answer.get("rationale")) or "该假设由公开重置指令和独立文献快照重新推理。"
+        validation = _structured_text(answer.get("validation")) or "使用独立证据支持的对照设计重新检验。"
+        item_ids = [int(item["id"]) for item in items]
+        run_id = self.db.add_hypothesis_run(
+            researcher_question=question,
+            hypothesis=hypothesis,
+            rationale=rationale,
+            validation=validation,
+            item_ids=item_ids,
+            mode=f"watchdog_rethink:{mode}",
+        )
+        return {"id": run_id, "hypothesis": hypothesis, "rationale": rationale, "validation": validation, "mode": f"watchdog_rethink:{mode}"}
 
 
 def _personal_item(path: Path) -> dict[str, Any]:
@@ -196,9 +266,10 @@ def _extract_text(path: Path) -> str:
     return ""
 
 
-def _library_snapshot(items: list[dict[str, Any]]) -> dict[str, Any]:
+def _library_snapshot(items: list[dict[str, Any]], *, memory: str = "") -> dict[str, Any]:
     return {
         "instruction": "Use only these library records. Do not invent papers, authors, identifiers, findings, or prior conversation.",
+        "public_dialogue_memory": memory,
         "items": [
             {"id": item["id"], "source": item["source_type"], "title": item["title"], "abstract": str(item.get("abstract") or "")[:900]}
             for item in items
@@ -270,3 +341,10 @@ def _structured_text(value: Any) -> str:
     if isinstance(value, list):
         return "；".join(_structured_text(item) for item in value)
     return str(value or "").strip()
+
+
+def _watchdog_status(issue: str, prior_reviews: list[dict[str, Any]]) -> str:
+    if issue == "none":
+        return "continue"
+    same_issue = [item for item in prior_reviews if item.get("issue") == issue and item.get("status") != "continue"]
+    return "interrupt" if len(same_issue) >= 2 else "warning"

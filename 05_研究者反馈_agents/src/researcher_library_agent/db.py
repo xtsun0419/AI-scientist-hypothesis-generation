@@ -61,6 +61,17 @@ class ResearcherLibraryDB:
                 mode TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS hypothesis_reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL UNIQUE,
+                status TEXT NOT NULL CHECK(status IN ('continue', 'warning', 'interrupt')),
+                issue TEXT NOT NULL,
+                rationale TEXT NOT NULL,
+                restart_instruction TEXT,
+                evidence_ids_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(run_id) REFERENCES hypothesis_runs(id)
+            );
             """
         )
         if self.get_setting("enabled") is None:
@@ -143,3 +154,47 @@ class ResearcherLibraryDB:
 
     def recent_hypotheses(self, limit: int = 8) -> list[dict[str, Any]]:
         return [dict(row) for row in self.conn.execute("SELECT * FROM hypothesis_runs ORDER BY id DESC LIMIT ?", (limit,))]
+
+    def add_hypothesis_review(
+        self,
+        *,
+        run_id: int,
+        status: str,
+        issue: str,
+        rationale: str,
+        restart_instruction: str | None,
+        evidence_ids: list[str],
+    ) -> int:
+        cur = self.conn.execute(
+            """
+            INSERT INTO hypothesis_reviews(run_id, status, issue, rationale, restart_instruction, evidence_ids_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(run_id) DO UPDATE SET
+                status = excluded.status, issue = excluded.issue, rationale = excluded.rationale,
+                restart_instruction = excluded.restart_instruction, evidence_ids_json = excluded.evidence_ids_json,
+                created_at = excluded.created_at
+            """,
+            (run_id, status, issue, rationale, restart_instruction, json.dumps(evidence_ids), utc_now_iso()),
+        )
+        self.conn.commit()
+        return int(cur.lastrowid)
+
+    def recent_hypothesis_reviews(self, limit: int = 24) -> list[dict[str, Any]]:
+        return [
+            dict(row)
+            for row in self.conn.execute("SELECT * FROM hypothesis_reviews ORDER BY run_id DESC LIMIT ?", (limit,))
+        ]
+
+    def review_for_runs(self, run_ids: list[int]) -> dict[int, dict[str, Any]]:
+        if not run_ids:
+            return {}
+        placeholders = ", ".join("?" for _ in run_ids)
+        rows = self.conn.execute(f"SELECT * FROM hypothesis_reviews WHERE run_id IN ({placeholders})", run_ids).fetchall()
+        return {int(row["run_id"]): dict(row) for row in rows}
+
+    def items_by_ids(self, ids: list[int]) -> dict[int, dict[str, Any]]:
+        if not ids:
+            return {}
+        placeholders = ", ".join("?" for _ in ids)
+        rows = self.conn.execute(f"SELECT * FROM library_items WHERE id IN ({placeholders})", ids).fetchall()
+        return {int(row["id"]): dict(row) for row in rows}

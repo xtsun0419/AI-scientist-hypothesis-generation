@@ -15,5 +15,9 @@ def default_db_path() -> Path:
     return agent_dir() / "data" / "researcher_library.sqlite"
 
 
+def default_memory_path() -> Path:
+    return agent_dir() / "data" / "MEMORY.md"
+
+
 def default_retrieval_db_path() -> Path:
     return workspace_root() / "文献检索_agent" / "data" / "literature.sqlite"

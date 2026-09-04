@@ -38,6 +38,7 @@ env/
 **/data/goal_pdfs/
 **/data/manual_pdfs/
 文献检索_agent/reports/
+05_研究者反馈_agents/data/MEMORY.md
 
 # Generated render / report artifacts
 REPORT/render_qa_chapter/

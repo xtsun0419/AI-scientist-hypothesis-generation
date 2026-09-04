@@ -1175,6 +1175,7 @@ def render_researcher_library(*, message: str | None = None, error: str | None =
         state_error = _friendly_error(str(exc))
     metrics = state.get("metrics") or {}
     enabled = bool(state.get("enabled"))
+    reviews = {int(item["run_id"]): item for item in state.get("reviews") or [] if item.get("run_id") is not None}
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -1266,7 +1267,11 @@ def render_researcher_library(*, message: str | None = None, error: str | None =
         </section>
         <section class="panel">
           <div class="panel-head"><h2>最终假设</h2><span class="badge badge-teal">公开消息</span></div>
-          {researcher_hypothesis_list(state.get('hypotheses') or [])}
+          {researcher_hypothesis_list(state.get('hypotheses') or [], reviews)}
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>MEMORY.md</h2><span class="badge badge-blue">公共记忆</span></div>
+          <pre class="memory-output">{html.escape(str(state.get('memory') or '暂无对话记忆'))}</pre>
         </section>
         <section class="panel">
           <div class="panel-head"><h2>文献条目</h2><span class="subtle">{metrics.get('total', 0)} 条</span></div>
@@ -1305,18 +1310,42 @@ def researcher_library_items(items: list[dict[str, Any]]) -> str:
     )
 
 
-def researcher_hypothesis_list(hypotheses: list[dict[str, Any]]) -> str:
+def researcher_hypothesis_list(hypotheses: list[dict[str, Any]], reviews: dict[int, dict[str, Any]]) -> str:
     if not hypotheses:
         return '<div class="subtle">暂无最终假设</div>'
     return "".join(
         '<article class="researcher-hypothesis">'
+        f'{watchdog_line(int(item.get("id") or 0), reviews)}'
         f'<h3>{html.escape(str(item.get("hypothesis") or ""))}</h3>'
         f'<p><b>提问：</b>{html.escape(str(item.get("researcher_question") or ""))}</p>'
         f'<p><b>验证：</b>{html.escape(_structured_display(item.get("validation")))}</p>'
+        f'{watchdog_detail(reviews.get(int(item.get("id") or 0)))}'
         f'<span class="subtle">#{html.escape(str(item.get("id") or ""))} · {html.escape(str(item.get("mode") or ""))}</span>'
         '</article>'
         for item in hypotheses
     )
+
+
+def watchdog_label(review: dict[str, Any] | None) -> str:
+    return {"continue": "审查通过", "warning": "方向警告", "interrupt": "已中断并重置"}.get(str((review or {}).get("status") or ""), "待审查")
+
+
+def watchdog_badge(review: dict[str, Any] | None) -> str:
+    return {"continue": "badge-teal", "warning": "badge-amber", "interrupt": "badge-red"}.get(str((review or {}).get("status") or ""), "badge-neutral")
+
+
+def watchdog_line(run_id: int, reviews: dict[int, dict[str, Any]]) -> str:
+    review = reviews.get(run_id)
+    return f'<div class="watchdog-line"><span class="badge {watchdog_badge(review)}">{html.escape(watchdog_label(review))}</span></div>'
+
+
+def watchdog_detail(review: dict[str, Any] | None) -> str:
+    if not review:
+        return ""
+    parts = [f'<p class="watchdog-detail"><b>审查：</b>{html.escape(str(review.get("rationale") or ""))}</p>']
+    if review.get("restart_instruction"):
+        parts.append(f'<p class="watchdog-detail"><b>重置：</b>{html.escape(str(review["restart_instruction"]))}</p>')
+    return "".join(parts)
 
 
 def _structured_display(value: object) -> str:
@@ -1347,6 +1376,9 @@ def researcher_library_css() -> str:
     .researcher-question h3, .researcher-hypothesis h3, .library-item h3 { color:var(--ink); font-size:14px; line-height:1.45; margin:0; text-transform:none; }
     .researcher-question p, .researcher-hypothesis p, .library-item p { color:var(--muted); line-height:1.5; margin:0; white-space:pre-wrap; }
     .library-item > div { align-items:center; display:flex; flex-wrap:wrap; gap:8px; }
+    .watchdog-line { display:flex; justify-content:flex-end; }
+    .watchdog-detail { border-left:3px solid #f59e0b; padding-left:8px; }
+    .memory-output { background:#f8fafc; border:1px solid var(--line); color:#334155; font:12px/1.55 "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace; margin:0; max-height:360px; overflow:auto; padding:10px; white-space:pre-wrap; }
     @media (max-width:900px) { .library-workspace { grid-template-columns:1fr; } }
     """
 
